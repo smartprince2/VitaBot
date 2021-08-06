@@ -5,6 +5,7 @@ import { join } from "path"
 import Command from "./command"
 import { generateDefaultEmbed } from "./util"
 import { VITABOT_GITHUB } from "../common/constants"
+import { dbPromise } from "../common/load-db"
 
 export const client = new Discord.Client({
     disableMentions: "everyone",
@@ -59,5 +60,7 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
             commands.set(alias, command)
         }
     }
+    // wait for db before launching bot
+    await dbPromise
     await client.login(process.env.DISCORD_TOKEN)
 })

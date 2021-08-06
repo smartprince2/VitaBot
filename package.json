@@ -31,6 +31,7 @@
   "private": true,
   "devDependencies": {
     "@types/node": "^16.4.12",
+    "@types/qrcode": "^1.4.1",
     "typescript": "^4.3.5"
   },
   "dependencies": {
@@ -38,12 +39,14 @@
     "@vite/vitejs-http": "^2.3.14",
     "@vite/vitejs-ipc": "^2.3.14",
     "@vite/vitejs-ws": "^2.3.14",
+    "bignumber.js": "^9.0.1",
     "bufferutil": "^4.0.3",
     "discord.js": "^12.5.3",
     "dotenv": "^10.0.0",
     "erlpack": "github:discord/erlpack",
     "modernlog": "^1.0.1",
     "mongoose": "^5.13.5",
+    "qrcode": "^1.4.4",
     "utf-8-validate": "^5.0.5",
     "zlib-sync": "^0.1.7"
   }
