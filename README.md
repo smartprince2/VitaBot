@@ -5,7 +5,7 @@
 # VitaBot
 This is a tipbot for [Vitamin Coin 💊](https://vitamincoin.org) ! It is currently in their [Discord](https://discord.gg/sUvQufEqna) !
 # How to use this bot ?
-The prefix is `.`. List all commands by doing .help
+The prefix is `.`, List all commands by doing .help
 # What can it do ?
 This bot can store, tip, and send VITC, and all other tokens on the VITE network ! Every transactions are done on-chain, seeds are stored in a database.
 # Contribute
