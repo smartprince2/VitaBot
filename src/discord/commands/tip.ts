@@ -103,7 +103,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             if(balance.isLessThan(totalAsked)){
                 await message.channel.send({
-                    content: `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} ${currencyOrRecipient} but you only have ${balance.toFixed()} ${currencyOrRecipient}.`,
+                    content: `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} ${currencyOrRecipient} but you only have ${balance.toFixed()} ${currencyOrRecipient} in your balance. Use .deposit to top up your account.`,
                     reply: {
                         messageReference: message,
                         failIfNotExists: false

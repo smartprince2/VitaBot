@@ -14,6 +14,10 @@ export default new class Balance implements Command {
     usage = ""
 
     async execute(message:Message){
+        if(message.guild){
+            await message.reply("Please execute this command in DMs")
+            return
+        }
         const address = await discordqueue.queueAction(message.author.id, async () => {
             return await getVITEAddressOrCreateOne(message.author.id, "Discord")
         })

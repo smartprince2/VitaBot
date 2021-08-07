@@ -111,7 +111,7 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
     }
 }
 
-export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string){
+export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string):Promise<string>{
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
     
