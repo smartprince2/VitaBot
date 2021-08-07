@@ -32,8 +32,8 @@ client.on("ready", () => {
 client.on("messageCreate", async message => {
     if(!message.content.startsWith(process.env.DISCORD_PREFIX))return
     if(message.author.bot)return
-    let args = message.content.trim().slice(process.env.DISCORD_PREFIX.length).split(/ +/g)
-    let command = args.shift().toLowerCase()
+    const args = message.content.trim().slice(process.env.DISCORD_PREFIX.length).split(/ +/g)
+    const command = args.shift().toLowerCase()
 
     const cmd = commands.get(command)
     if(!cmd)return
@@ -62,14 +62,14 @@ client.on("error", () => {})
 
 fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
 .then(async files => {
-    for(let file of files){
+    for(const file of files){
         if(!file.isFile())continue
         if(!file.name.endsWith(".js") && !file.name.endsWith(".ts"))continue
         const mod = await import(join(__dirname, "commands", file.name))
         const command:Command = mod.default
 
         rawCommands.push(command)
-        for(let alias of command.alias){
+        for(const alias of command.alias){
             commands.set(alias, command)
         }
     }

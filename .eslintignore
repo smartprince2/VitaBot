@@ -1,0 +1,8 @@
+builds
+DiscordBundle
+dist
+esbuild
+fsevents
+node_modules
+webpack
+lc-api-docs

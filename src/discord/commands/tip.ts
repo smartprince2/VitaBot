@@ -27,8 +27,10 @@ Examples:
 
     async execute(message:Message, args: string[], command: string){
         let [
+            // eslint-disable-next-line prefer-const
             amount,
             currencyOrRecipient,
+            // eslint-disable-next-line prefer-const
             ...recipientsRaw
         ] = args
         if(!amount || !currencyOrRecipient)return help.execute(message, [command])
@@ -58,7 +60,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
         const recipients = []
         const errors = []
         const promises = []
-        for(let recipient of recipientsRaw){
+        for(const recipient of recipientsRaw){
             promises.push((async () => {
                 try{
                     const user = await parseDiscordUser(recipient)
@@ -99,7 +101,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
 
         await viteQueue.queueAction(address.address, async () => {
             const balances = await getBalances(address.address)
-            let token = tokenIds[currencyOrRecipient]
+            const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             if(balance.isLessThan(totalAsked)){
                 await message.channel.send({
@@ -111,7 +113,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
                 })
                 return
             }
-            for(let recipient of addresses){
+            for(const recipient of addresses){
                 await sendVITE(
                     address.seed, 
                     recipient.address, 

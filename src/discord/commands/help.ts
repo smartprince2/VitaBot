@@ -29,7 +29,7 @@ ${process.env.DISCORD_PREFIX}help deposit`
                     command = "help"
                 }
             }else{
-                let cmd = args[0].toLowerCase()
+                const cmd = args[0].toLowerCase()
                 if(commands.has(cmd)){
                     command = cmd
                 }else{
@@ -59,7 +59,7 @@ ${process.env.DISCORD_PREFIX}help deposit`
             embed.setTitle("Command Overview")
             .setDescription(`Use \`.help ${this.usage}\` to get more informations about a specific command or to change the page. 
 You are currently at the ${page}/${totalPages} page.`)
-            for(let command of commands){
+            for(const command of commands){
                 embed.addField(`${process.env.DISCORD_PREFIX}${command.alias[0]} ${command.usage}`, command.description)
             }
         }else{

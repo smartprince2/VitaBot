@@ -1,5 +1,5 @@
-import mongoose, { Document, Schema } from 'mongoose';
-import { Networks } from '../common/constants';
+import mongoose, { Document, Schema } from "mongoose";
+import { Networks } from "../common/constants";
 
 export interface IAddress extends Document {
     network: Networks
@@ -32,4 +32,4 @@ const AddressSchema = new Schema<IAddress>({
     ]
 })
 
-export default mongoose.model<IAddress>('Address', AddressSchema);
+export default mongoose.model<IAddress>("Address", AddressSchema);

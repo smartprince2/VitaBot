@@ -1,6 +1,6 @@
 import { Platform, tokenIds } from "../common/constants";
 import Address, { IAddress } from "../models/Address";
-import * as vite from '@vite/vitejs';
+import * as vite from "@vite/vitejs";
 import WS_RPC from "@vite/vitejs-ws";
 import { client } from "../discord";
 import viteQueue from "./viteQueue";
@@ -41,7 +41,7 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
             if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
             
             const tokenName = Object.entries(tokenIds).find(e => e[1] === block.tokenInfo.tokenId)[0]
-            let displayNumber = convert(
+            const displayNumber = convert(
                 block.amount, 
                 "RAW", 
                 tokenName
@@ -54,7 +54,7 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
                 network: "VITE"
             })
             if(sendingAddress){
-                let [id, platform] = sendingAddress.handles[0].split("")
+                const [id, platform] = sendingAddress.handles[0].split("")
                 let mention = ""
                 switch(platform){
                     case "Discord": {
@@ -66,7 +66,7 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
             }else{
                 text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance !`+text
             }
-            for(let handle of address.handles){
+            for(const handle of address.handles){
                 const [id, service] = handle.split(".")
                 switch(service){
                     case "Discord": {
@@ -141,7 +141,7 @@ export async function getBalances(address: string){
     } = {
         [tokenIds.VITC]: "0"
     }
-    for(let tokenId in result.balanceInfoMap){
+    for(const tokenId in result.balanceInfoMap){
         balances[tokenId] = result.balanceInfoMap[tokenId].balance
     }
     return balances

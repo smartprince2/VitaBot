@@ -48,7 +48,7 @@ export function convert(amount: string, base_unit: string, unit: string){
             value = value.shiftedBy(-18)
         break
     }
-    let toFixed = value.toFixed()
+    const toFixed = value.toFixed()
     return toFixed
 }
 

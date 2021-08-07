@@ -15,6 +15,7 @@ export default class ActionQueue<keyType = any> {
         acc.queue.push(()=>nextStep().then(resolve, reject))
         let resolve:((value?:unknown)=>void)
         let reject:((error?:Error)=>void)
+        // eslint-disable-next-line no-async-promise-executor
         return new Promise(async (r, j) => {
             resolve = r
             reject = j

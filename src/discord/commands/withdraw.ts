@@ -33,6 +33,7 @@ Examples:
             return
         }
         let [
+            // eslint-disable-next-line prefer-const
             amountRaw,
             currencyOrRecipient,
             addr
@@ -63,7 +64,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
 
         await viteQueue.queueAction(address.address, async () => {
             const balances = await getBalances(address.address)
-            let token = tokenIds[currencyOrRecipient]
+            const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW"))
             if(balance.isLessThan(amount)){

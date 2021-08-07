@@ -28,7 +28,7 @@ export default new class Balance implements Command {
         const embed = generateDefaultEmbed()
         .setAuthor("View on vitescan.io", undefined, `https://vitescan.io/address/${address.address}`)
         .setDescription(Object.keys(balances).map(tokenId => {
-            let displayToken = Object.entries(tokenIds).find(e => e[1] === tokenId)?.[0] || tokenId
+            const displayToken = Object.entries(tokenIds).find(e => e[1] === tokenId)?.[0] || tokenId
             const displayBalance = convert(balances[tokenId], "RAW", displayToken as any)
 
             return `[**${tokenNameToDisplayName(displayToken)}**](https://vitescan.io/token/${tokenId}): ${displayBalance}`
