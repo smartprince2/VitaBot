@@ -1,7 +1,8 @@
-# VitaBot
 ![Issues](https://img.shields.io/github/issues-raw/JeanOUINA/VitaBot)
 ![Pull Requests](https://img.shields.io/github/issues-pr-raw/JeanOUINA/VitaBot)
 [![Discord](https://img.shields.io/discord/862416292760649768?logo=discord&style=flat-square&color=%23fffd6c)](https://discord.gg/sUvQufEqna)
+---
+# VitaBot
 This is a tipbot for [Vitamin Coin 💊](https://vitamincoin.org) ! It is currently in their [Discord](https://discord.gg/sUvQufEqna) !
 # How to use this bot ?
 The prefix is `.`. List all commands by doing .help
