@@ -45,13 +45,15 @@
     "@vite/vitejs-ipc": "^2.3.14",
     "@vite/vitejs-ws": "^2.3.14",
     "bignumber.js": "^9.0.1",
-    "bufferutil": "^4.0.3",
     "discord.js": "13",
     "dotenv": "^10.0.0",
-    "erlpack": "github:discord/erlpack",
     "modernlog": "^1.0.1",
     "mongoose": "^5.13.5",
-    "qrcode": "^1.4.4",
+    "qrcode": "^1.4.4"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.3",
+    "erlpack": "github:discord/erlpack",
     "utf-8-validate": "^5.0.5",
     "zlib-sync": "^0.1.7"
   }
