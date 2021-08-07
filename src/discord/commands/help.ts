@@ -49,7 +49,9 @@ ${process.env.DISCORD_PREFIX}help deposit`
             if(page > totalPages){
                 embed.setTitle("Invalid Page")
                 .setDescription(`You asked for page ${page}/${totalPages}, which is out of range.`)
-                message.channel.send(embed)
+                await message.channel.send({
+                    embeds: [embed]
+                })
                 return
             }
             const startIndex = (page-1)*pagination
@@ -63,12 +65,15 @@ You are currently at the ${page}/${totalPages} page.`)
         }else{
             const cmd = commands.get(command)
             let description = cmd.extended_description
+            description = `**Usage**:\n${process.env.DISCORD_PREFIX}${command} ${cmd.usage}\n\n${description}`
             if(cmd.alias[0] !== command){
                 description = `*Alias of the ${cmd.alias[0]} command*\n\n${description}`
             }
-            embed.setTitle(`${command} Command Overview`)
-            .setDescription(cmd.extended_description)
+            embed.setTitle(`Command Overview`)
+            .setDescription(description)
         }
-        message.channel.send(embed)
+        await message.channel.send({
+            embeds: [embed]
+        })
     }
 }

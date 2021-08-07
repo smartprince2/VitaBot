@@ -7,7 +7,7 @@ import * as qrcode from "qrcode"
 
 export default new class Deposit implements Command {
     description = "Get your deposit address"
-    extended_description = "Retrieve your deposit address"
+    extended_description = "Retrieve your deposit address. Currently accepts only VITC."
     alias = ["deposit"]
     usage = ""
 
@@ -25,15 +25,22 @@ export default new class Deposit implements Command {
         const embed = generateDefaultEmbed()
         .setImage("attachment://qrcode.png")
         .setAuthor("Your deposit address")
-        await message.author.send(address.address, {
-            embed: embed,
+        await message.author.send({
+            content: address.address,
+            embeds: [embed],
             files: [{
                 attachment: buffer,
                 name: "qrcode.png"
             }]
         })
         if(message.guild){
-            await message.reply("I've sent your deposit address in your DM !")
+            await message.channel.send({
+                content: "I've sent your deposit address in your DM !",
+                reply: {
+                    messageReference: message,
+                    failIfNotExists: false
+                }
+            })
         }
     }
 }

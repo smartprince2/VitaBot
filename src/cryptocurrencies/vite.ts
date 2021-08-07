@@ -4,7 +4,8 @@ import * as vite from '@vite/vitejs';
 import WS_RPC from "@vite/vitejs-ws";
 import { client } from "../discord";
 import viteQueue from "./viteQueue";
-import BigNumber from "bignumber.js";
+import { convert, tokenNameToDisplayName } from "../common/convert";
+import PoWQueue from "./PoWQueue";
 
 const wsService = new WS_RPC(process.env.VITE_WS)
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
@@ -13,7 +14,6 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
         try{
             const block = await wsProvider.request("ledger_getAccountBlockByHash", result[0].hash)
             if(!block)return
-            if(block.tokenInfo.tokenId !== tokenIds.VITC)return
             if(block.blockType !== 2)return
             const address = await Address.findOne({
                 address: block.toAddress,
@@ -30,14 +30,22 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
                 accountBlock.setProvider(wsProvider)
                 .setPrivateKey(keyPair.privateKey)
                 await accountBlock.autoSetPreviousAccountBlock()
-                await accountBlock.PoW()
+                await PoWQueue.queueAction("vite", async () => {
+                    await accountBlock.PoW()
+                })
                 await accountBlock.sign()
                 await accountBlock.send()
             })
+
+            // Don't send dm on random coins, for now just tell for registered coins.
+            if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
             
-            let displayNumber = new BigNumber(block.amount)
-                .div(new BigNumber("1000000000000000000"))
-                .toString()
+            const tokenName = Object.entries(tokenIds).find(e => e[1] === block.tokenInfo.tokenId)[0]
+            let displayNumber = convert(
+                block.amount, 
+                "RAW", 
+                tokenName
+            )
             let text = `
         
 View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
@@ -54,9 +62,9 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
                         break
                     }
                 }
-                text = `You were tipped ${displayNumber} VITC 💊 by ${mention} !`+text
+                text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention} !`+text
             }else{
-                text = `${displayNumber} VITC 💊 were added in your account's balance !`+text
+                text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance !`+text
             }
             for(let handle of address.handles){
                 const [id, service] = handle.split(".")
@@ -103,39 +111,38 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
     }
 }
 
-export async function sendVITC(seed: string, toAddress: string, amount: string){
+export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string){
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
-    const result = await viteQueue.queueAction(fromAddress.address, async () => {
-        const accountBlock = vite.accountBlock.createAccountBlock("send", {
-            toAddress: toAddress,
-            address: fromAddress.address,
-            tokenId: tokenIds.VITC,
-            amount: amount
-        })
-        accountBlock.setProvider(wsProvider)
-        .setPrivateKey(keyPair.privateKey)
-        await accountBlock.autoSetPreviousAccountBlock()
-        await accountBlock.PoW()
-        await accountBlock.sign()
-        return await accountBlock.send()
+    
+    const accountBlock = vite.accountBlock.createAccountBlock("send", {
+        toAddress: toAddress,
+        address: fromAddress.address,
+        tokenId: tokenId,
+        amount: amount
     })
-    return result.hash
+    accountBlock.setProvider(wsProvider)
+    .setPrivateKey(keyPair.privateKey)
+    await accountBlock.autoSetPreviousAccountBlock()
+    await PoWQueue.queueAction("vite", async () => {
+        await accountBlock.PoW()
+    })
+    await accountBlock.sign()
+
+    return (await accountBlock.send()).hash
 }
 
 export async function getBalances(address: string){
-    return await viteQueue.queueAction(address, async () => {
-        const result = await wsProvider.request("ledger_getAccountInfoByAddress", address)
-        // Just in case
-        if(!result)throw new Error("No result for this address")
-        const balances:{
-            [tokenId: string]: string
-        } = {
-            [tokenIds.VITC]: "0"
-        }
-        for(let tokenId in result.balanceInfoMap){
-            balances[tokenId] = result.balanceInfoMap[tokenId].balance
-        }
-        return balances
-    })
+    const result = await wsProvider.request("ledger_getAccountInfoByAddress", address)
+    // Just in case
+    if(!result)throw new Error("No result for this address")
+    const balances:{
+        [tokenId: string]: string
+    } = {
+        [tokenIds.VITC]: "0"
+    }
+    for(let tokenId in result.balanceInfoMap){
+        balances[tokenId] = result.balanceInfoMap[tokenId].balance
+    }
+    return balances
 }

@@ -8,7 +8,14 @@ import { VITABOT_GITHUB } from "../common/constants"
 import { dbPromise } from "../common/load-db"
 
 export const client = new Discord.Client({
-    disableMentions: "everyone",
+    allowedMentions: {
+        repliedUser: true
+    },
+    intents: [
+        Discord.Intents.FLAGS.GUILDS,
+        Discord.Intents.FLAGS.GUILD_MESSAGES,
+        Discord.Intents.FLAGS.DIRECT_MESSAGES
+    ]
 })
 
 export const commands = new Collection<string, Command>()
@@ -22,7 +29,7 @@ client.on("ready", () => {
     })
 })
 
-client.on("message", async message => {
+client.on("messageCreate", async message => {
     if(!message.content.startsWith(process.env.DISCORD_PREFIX))return
     if(message.author.bot)return
     let args = message.content.trim().slice(process.env.DISCORD_PREFIX.length).split(/ +/g)
@@ -35,12 +42,18 @@ client.on("message", async message => {
         await cmd.execute(message, args, command)
     }catch(err){
         console.error(err)
-        message.reply(
-            `The command ${command} throwed an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`, 
-            generateDefaultEmbed()
-            .setDescription("```"+err+"```")
-            .setAuthor("Go to VitaBot's github", undefined, VITABOT_GITHUB)
-        )
+        message.channel.send({
+            content: `The command ${command} throwed an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
+            embeds: [
+                generateDefaultEmbed()
+                .setDescription("```"+err+"```")
+                .setAuthor("Go to VitaBot's github", undefined, VITABOT_GITHUB)
+            ],
+            reply: {
+                messageReference: message,
+                failIfNotExists: false
+            }
+        })
     }
 })
 
