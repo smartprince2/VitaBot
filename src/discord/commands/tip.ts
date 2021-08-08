@@ -103,8 +103,8 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
             const balances = await getBalances(address.address)
             const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const rawAmount = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW").split(".")[0])
-            if(balance.isLessThan(rawAmount)){
+            const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW").split(".")[0])
+            if(balance.isLessThan(totalAskedRaw)){
                 await message.channel.send({
                     content: `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} ${currencyOrRecipient} but you only have ${balance.toFixed()} ${currencyOrRecipient} in your balance. Use .deposit to top up your account.`,
                     reply: {
@@ -118,7 +118,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
                 await sendVITE(
                     address.seed, 
                     recipient.address, 
-                    rawAmount.toFixed(), 
+                    convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
                     token
                 )
             }
