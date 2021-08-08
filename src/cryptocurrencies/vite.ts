@@ -54,7 +54,7 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
                 network: "VITE"
             })
             if(sendingAddress){
-                const [id, platform] = sendingAddress.handles[0].split("")
+                const [id, platform] = sendingAddress.handles[0].split(".")
                 let mention = ""
                 switch(platform){
                     case "Discord": {
