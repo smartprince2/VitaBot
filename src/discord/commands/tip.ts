@@ -121,13 +121,8 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
                     token
                 )
             }
-            await message.channel.send({
-                content: `A total of ${totalAsked.toFixed()} ${tokenNameToDisplayName(currencyOrRecipient)} was sent to ${addresses.length} recipient(s) !`,
-                reply: {
-                    messageReference: message,
-                    failIfNotExists: false
-                }
-            })
+            await message.react("873558842699571220")
+            await message.react("💊")
         })
     }
 }
