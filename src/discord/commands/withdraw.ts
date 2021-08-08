@@ -66,10 +66,10 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
             const balances = await getBalances(address.address)
             const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW"))
+            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
             if(balance.isLessThan(amount)){
                 await message.channel.send({
-                    content: `You don't have enough money to cover this withdraw. You need ${amount.toFixed()} ${currencyOrRecipient} but you only have ${balance.toFixed()} ${currencyOrRecipient} in your balance.`,
+                    content: `You don't have enough money to cover this withdraw. You need ${convert(amount, "RAW", currencyOrRecipient)} ${currencyOrRecipient} but you only have ${convert(balance, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in your balance.`,
                     reply: {
                         messageReference: message,
                         failIfNotExists: false

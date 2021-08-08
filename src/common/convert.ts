@@ -1,6 +1,6 @@
 import BigNumber from "bignumber.js"
 
-export function convert(amount: string, base_unit: string, unit: string){
+export function convert(amount: string|BigNumber|number, base_unit: string, unit: string){
     let value = new BigNumber(amount)
     switch(base_unit){
         case "ETH":
