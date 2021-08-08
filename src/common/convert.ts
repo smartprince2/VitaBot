@@ -3,7 +3,10 @@ import BigNumber from "bignumber.js"
 export function convert(amount: string, base_unit: string, unit: string){
     let value = new BigNumber(amount)
     switch(base_unit){
+        case "ETH":
         case "VITC": 
+        case "VX":
+        case "VITE":
             value = value.shiftedBy(18)
         break
         case "BAN":
@@ -12,21 +15,18 @@ export function convert(amount: string, base_unit: string, unit: string){
         case "NANO":
             value = value.shiftedBy(30)
         break
-        case "VX":
-            value = value.shiftedBy(18)
-        break
         case "BTC":
             value = value.shiftedBy(8)
         break
         case "XMR":
             value = value.shiftedBy(12)
         break
-        case "ETH":
-            value = value.shiftedBy(18)
-        break
     }
     switch(unit){
-        case "VITC":
+        case "ETH":
+        case "VITC": 
+        case "VX":
+        case "VITE":
             value = value.shiftedBy(-18)
         break
         case "BAN":
@@ -35,17 +35,11 @@ export function convert(amount: string, base_unit: string, unit: string){
         case "NANO":
             value = value.shiftedBy(-30)
         break
-        case "VX":
-            value = value.shiftedBy(-18)
-        break
         case "BTC":
             value = value.shiftedBy(-8)
         break
         case "XMR":
             value = value.shiftedBy(-12)
-        break
-        case "ETH":
-            value = value.shiftedBy(-18)
         break
     }
     const toFixed = value.toFixed()

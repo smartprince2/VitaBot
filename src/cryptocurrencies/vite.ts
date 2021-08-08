@@ -26,11 +26,9 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
             if(!address)return
             if(skipBlocks.includes(result[0].hash))return
             skipBlocks.push(result[0].hash)
-            setTimeout(() => {
-                skipBlocks.slice(skipBlocks.indexOf(result[0].hash), 1)
-            }, 30000)
 
             await receive(address, block)
+            skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
         }catch(err){
             console.error(err)
         }
@@ -38,19 +36,17 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
 })
 
 export async function receive(address:IAddress, block:any){
-    // Ok, we received a payment
+    // Ok, we received a deposit/tip
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
-    await viteQueue.queueAction(block.toAddress, async () => {
+    await viteQueue.queueAction(address.address, async () => {
         const accountBlock = vite.accountBlock.createAccountBlock("receive", {
-            address: block.toAddress,
+            address: address.address,
             sendBlockHash: block.hash
         })
         accountBlock.setProvider(wsProvider)
         .setPrivateKey(keyPair.privateKey)
         await accountBlock.autoSetPreviousAccountBlock()
-        await PoWQueue.queueAction("vite", async () => {
-            await accountBlock.PoW()
-        })
+        await accountBlock.PoW()
         await accountBlock.sign()
         await accountBlock.send()
     })
@@ -168,10 +164,9 @@ export async function getBalances(address: string){
     // Start of the code ! Time to receive as most transactions as possible !
     const addresses = await Address.find()
     for(const address of addresses){
-        console.log(address.address)
         // eslint-disable-next-line no-constant-condition
         while(true){
-            const shouldStop = await viteQueue.queueAction(address.address, async () => {
+            const shouldStop = await (async () => {
                 const blocks = await wsProvider.request(
                     "ledger_getUnreceivedBlocksByAddress",
                     address.address,
@@ -182,15 +177,13 @@ export async function getBalances(address: string){
                 for(const block of blocks){
                     if(skipBlocks.includes(block.hash))continue
                     skipBlocks.push(block.hash)
-                    setTimeout(() => {
-                        skipBlocks.slice(skipBlocks.indexOf(block.hash), 1)
-                    }, 30000)
             
                     await receive(address, block)
+                    skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
                 }
                 if(blocks.length !== 10)return true
                 return false
-            })
+            })()
             if(shouldStop)break
         }
     }

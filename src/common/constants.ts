@@ -6,6 +6,7 @@ export type Networks = "VITE"
 export type Platform = "Discord" | "Twitter" | "Reddit"
 
 export const tokenIds = {
+    VITE: "tti_5649544520544f4b454e6e40",
     VITC: "tti_22d0b205bed4d268a05dfc3c",
     BAN: "tti_61f59e574f9f7babfe8908e5",
     NANO: "tti_29a2af20212b985e9d49e899",
