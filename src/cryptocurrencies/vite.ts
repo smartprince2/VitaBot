@@ -6,12 +6,16 @@ import { client } from "../discord";
 import viteQueue from "./viteQueue";
 import { convert, tokenNameToDisplayName } from "../common/convert";
 import PoWQueue from "./PoWQueue";
+import { parseDiscordUser } from "../discord/util";
+
+const skipBlocks = []
 
 const wsService = new WS_RPC(process.env.VITE_WS)
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
     const event = await wsProvider.subscribe("createAccountBlockSubscription")
     event.on(async (result) => {
         try{
+            if(skipBlocks.includes(result[0].hash))return
             const block = await wsProvider.request("ledger_getAccountBlockByHash", result[0].hash)
             if(!block)return
             if(block.blockType !== 2)return
@@ -20,68 +24,81 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
                 network: "VITE"
             })
             if(!address)return
-            // Ok, we received a payment
-            const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
-            await viteQueue.queueAction(block.toAddress, async () => {
-                const accountBlock = vite.accountBlock.createAccountBlock("receive", {
-                    address: block.toAddress,
-                    sendBlockHash: block.hash
-                })
-                accountBlock.setProvider(wsProvider)
-                .setPrivateKey(keyPair.privateKey)
-                await accountBlock.autoSetPreviousAccountBlock()
-                await PoWQueue.queueAction("vite", async () => {
-                    await accountBlock.PoW()
-                })
-                await accountBlock.sign()
-                await accountBlock.send()
-            })
+            if(skipBlocks.includes(result[0].hash))return
+            skipBlocks.push(result[0].hash)
+            setTimeout(() => {
+                skipBlocks.slice(skipBlocks.indexOf(result[0].hash), 1)
+            }, 30000)
 
-            // Don't send dm on random coins, for now just tell for registered coins.
-            if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
-            
-            const tokenName = Object.entries(tokenIds).find(e => e[1] === block.tokenInfo.tokenId)[0]
-            const displayNumber = convert(
-                block.amount, 
-                "RAW", 
-                tokenName
-            )
-            let text = `
-        
-View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
-            const sendingAddress = await Address.findOne({
-                address: block.fromAddress,
-                network: "VITE"
-            })
-            if(sendingAddress){
-                const [id, platform] = sendingAddress.handles[0].split(".")
-                let mention = ""
-                switch(platform){
-                    case "Discord": {
-                        mention = `<@${id}>`
-                        break
-                    }
-                }
-                text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention} !`+text
-            }else{
-                text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance !`+text
-            }
-            for(const handle of address.handles){
-                const [id, service] = handle.split(".")
-                switch(service){
-                    case "Discord": {
-                        const user = client.users.cache.get(id)
-                        if(!user)return
-                        user.send(text).catch(()=>{})
-                        break
-                    }
-                }
-            }
+            await receive(address, block)
         }catch(err){
             console.error(err)
         }
     })
 })
+
+export async function receive(address:IAddress, block:any){
+    // Ok, we received a payment
+    const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
+    await viteQueue.queueAction(block.toAddress, async () => {
+        const accountBlock = vite.accountBlock.createAccountBlock("receive", {
+            address: block.toAddress,
+            sendBlockHash: block.hash
+        })
+        accountBlock.setProvider(wsProvider)
+        .setPrivateKey(keyPair.privateKey)
+        await accountBlock.autoSetPreviousAccountBlock()
+        await PoWQueue.queueAction("vite", async () => {
+            await accountBlock.PoW()
+        })
+        await accountBlock.sign()
+        await accountBlock.send()
+    })
+
+    // Don't send dm on random coins, for now just tell for registered coins.
+    if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
+    
+    const tokenName = Object.entries(tokenIds).find(e => e[1] === block.tokenInfo.tokenId)[0]
+    const displayNumber = convert(
+        block.amount, 
+        "RAW", 
+        tokenName
+    )
+    let text = `
+
+View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
+    const sendingAddress = await Address.findOne({
+        address: block.fromAddress,
+        network: "VITE"
+    })
+    if(sendingAddress){
+        const [id, platform] = sendingAddress.handles[0].split(".")
+        let mention = "Unknown User"
+        switch(platform){
+            case "Discord": {
+                const user = await parseDiscordUser(id)
+                if(user){
+                    mention = user.tag
+                }
+                break
+            }
+        }
+        text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention} !`+text
+    }else{
+        text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance !`+text
+    }
+    for(const handle of address.handles){
+        const [id, service] = handle.split(".")
+        switch(service){
+            case "Discord": {
+                const user = client.users.cache.get(id)
+                if(!user)return
+                user.send(text).catch(()=>{})
+                break
+            }
+        }
+    }
+}
 
 export async function getVITEAddress(id:string, platform:Platform):Promise<IAddress>{
     const address = await Address.findOne({
@@ -146,3 +163,35 @@ export async function getBalances(address: string){
     }
     return balances
 }
+
+(async () => {
+    // Start of the code ! Time to receive as most transactions as possible !
+    const addresses = await Address.find()
+    for(const address of addresses){
+        console.log(address.address)
+        // eslint-disable-next-line no-constant-condition
+        while(true){
+            const shouldStop = await viteQueue.queueAction(address.address, async () => {
+                const blocks = await wsProvider.request(
+                    "ledger_getUnreceivedBlocksByAddress",
+                    address.address,
+                    0,
+                    10
+                )
+                if(blocks.length === 0)return true
+                for(const block of blocks){
+                    if(skipBlocks.includes(block.hash))continue
+                    skipBlocks.push(block.hash)
+                    setTimeout(() => {
+                        skipBlocks.slice(skipBlocks.indexOf(block.hash), 1)
+                    }, 30000)
+            
+                    await receive(address, block)
+                }
+                if(blocks.length !== 10)return true
+                return false
+            })
+            if(shouldStop)break
+        }
+    }
+})()
