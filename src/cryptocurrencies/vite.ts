@@ -46,7 +46,9 @@ export async function receive(address:IAddress, block:any){
         accountBlock.setProvider(wsProvider)
         .setPrivateKey(keyPair.privateKey)
         await accountBlock.autoSetPreviousAccountBlock()
-        await accountBlock.PoW()
+        await PoWQueue.queueAction("vite", async () => {
+            await accountBlock.PoW()
+        })
         await accountBlock.sign()
         await accountBlock.send()
     })

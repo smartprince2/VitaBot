@@ -45,16 +45,22 @@ Examples:
             addr = currencyOrRecipient
             currencyOrRecipient = "vitc"
         }
+        let isRawTokenId = false
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
 
         if(!Object.keys(tokenIds).includes(currencyOrRecipient)){
-            const embed = generateDefaultEmbed()
-            .setDescription(`The token ${currencyOrRecipient} isn't supported. Supported tokens are:
+            if(vite.utils.isValidTokenId(currencyOrRecipient.toLowerCase())){
+                isRawTokenId = true
+                currencyOrRecipient = currencyOrRecipient.toLowerCase()
+            }else{
+                const embed = generateDefaultEmbed()
+                .setDescription(`The token ${currencyOrRecipient} isn't supported. Supported tokens are:
 ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
-            await message.channel.send({
-                embeds: [embed]
-            })
-            return
+                await message.channel.send({
+                    embeds: [embed]
+                })
+                return
+            }
         }
         if(!addr)return help.execute(message, [command])
 
@@ -64,7 +70,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
 
         await viteQueue.queueAction(address.address, async () => {
             const balances = await getBalances(address.address)
-            const token = tokenIds[currencyOrRecipient]
+            const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
             if(balance.isLessThan(amount)){

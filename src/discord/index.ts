@@ -27,6 +27,7 @@ export const client = new Discord.Client({
 
 export const commands = new Collection<string, Command>()
 export const rawCommands = [] as Command[]
+let botRegexp:RegExp = null
 
 client.on("ready", () => {
     console.log(`Logged in as ${client.user.tag}`)
@@ -34,12 +35,19 @@ client.on("ready", () => {
         name: "Popping pills 💊",
         type: "PLAYING"
     })
+
+    botRegexp = new RegExp("^<@!?"+client.user.id+">$")
 })
 
+const prefix = process.env.DISCORD_PREFIX
 client.on("messageCreate", async message => {
-    if(!message.content.startsWith(process.env.DISCORD_PREFIX))return
+    if(botRegexp.test(message.content)){
+        message.reply("Hi ! If you're wondering, my prefix is `"+prefix+"` ! You can see my list of commands by doing `"+prefix+"help` ! 💊")
+        return
+    }
+    if(!message.content.startsWith(prefix))return
     if(message.author.bot)return
-    const args = message.content.trim().slice(process.env.DISCORD_PREFIX.length).split(/ +/g)
+    const args = message.content.trim().slice(prefix.length).split(/ +/g)
     const command = args.shift().toLowerCase()
 
     const cmd = commands.get(command)

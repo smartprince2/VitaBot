@@ -7,7 +7,7 @@ import * as qrcode from "qrcode"
 
 export default new class Deposit implements Command {
     description = "Get your deposit address"
-    extended_description = "Retrieve your deposit address. Currently accepts only VITC."
+    extended_description = "Retrieve your deposit address. VitaBot accepts tipping with a lot of tokens, and allows storing every token on the VITE blockchain !"
     alias = ["deposit"]
     usage = ""
 
