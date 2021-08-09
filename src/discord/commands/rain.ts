@@ -107,6 +107,9 @@ Examples:
             }))
         ])
         await viteQueue.queueAction(address.address, async () => {
+            try{
+                await message.react("💊")
+            }catch{}
             const balances = await getBalances(address.address)
             const token = tokenIds.VITC
             const balance = new BigNumber(balances[token])
@@ -129,9 +132,12 @@ Examples:
                     token
                 )
             }
-            await message.react("873558842699571220")
-            await message.react("💊")
-            await message.reply(`Distributed ${convert(totalAskedRaw, "RAW", "VITC")} VITC amongst ${userList.length} active members !`)
+            try{
+                await message.react("873558842699571220")
+            }catch{}
+            try{
+                await message.reply(`Distributed ${convert(totalAskedRaw, "RAW", "VITC")} VITC amongst ${userList.length} active members !`)
+            }catch{}
         })
     }
 }

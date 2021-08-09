@@ -5,16 +5,23 @@ import WS_RPC from "@vite/vitejs-ws";
 import { client } from "../discord";
 import viteQueue from "./viteQueue";
 import { convert, tokenNameToDisplayName } from "../common/convert";
-import PoWQueue from "./PoWQueue";
 import { parseDiscordUser } from "../discord/util";
-import { retryAsync } from "../common/util";
+import { retryAsync, wait } from "../common/util";
 
 const skipBlocks = []
+let promisesResolveSnapshotBlocks = []
 
 const wsService = new WS_RPC(process.env.VITE_WS)
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
-    const event = await wsProvider.subscribe("createAccountBlockSubscription")
-    event.on(async (result) => {
+    const SnapshotBlockEvent = await wsProvider.subscribe("createSnapshotBlockSubscription")
+    SnapshotBlockEvent.on(() => {
+        for(let r of promisesResolveSnapshotBlocks){
+            r()
+        }
+        promisesResolveSnapshotBlocks = []
+    })
+    const AccountBlockEvent = await wsProvider.subscribe("createAccountBlockSubscription")
+    AccountBlockEvent.on(async (result) => {
         try{
             if(skipBlocks.includes(result[0].hash))return
             const block = await wsProvider.request("ledger_getAccountBlockByHash", result[0].hash)
@@ -36,6 +43,12 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
     })
 })
 
+export function waitForNextSnapshotBlock(){
+    return new Promise(r => {
+        promisesResolveSnapshotBlocks.push(r)
+    })
+}
+
 export async function receive(address:IAddress, block:any){
     // Ok, we received a deposit/tip
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
@@ -48,9 +61,7 @@ export async function receive(address:IAddress, block:any){
             accountBlock.setProvider(wsProvider)
             .setPrivateKey(keyPair.privateKey)
             await accountBlock.autoSetPreviousAccountBlock()
-            await PoWQueue.queueAction("vite", async () => {
-                await accountBlock.PoW()
-            })
+            await accountBlock.PoW()
             await accountBlock.sign()
             await accountBlock.send()
         }, 3)
@@ -133,23 +144,29 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
     
-    return await retryAsync(async () => {
-        const accountBlock = vite.accountBlock.createAccountBlock("send", {
-            toAddress: toAddress,
-            address: fromAddress.address,
-            tokenId: tokenId,
-            amount: amount
-        })
-        accountBlock.setProvider(wsProvider)
-        .setPrivateKey(keyPair.privateKey)
-        await accountBlock.autoSetPreviousAccountBlock()
-        await PoWQueue.queueAction("vite", async () => {
+    return await retryAsync(async (tries) => {
+        try{
+            const accountBlock = vite.accountBlock.createAccountBlock("send", {
+                toAddress: toAddress,
+                address: fromAddress.address,
+                tokenId: tokenId,
+                amount: amount
+            })
+            accountBlock.setProvider(wsProvider)
+            .setPrivateKey(keyPair.privateKey)
+            await accountBlock.autoSetPreviousAccountBlock()
             await accountBlock.PoW()
-        })
-        await accountBlock.sign()
-    
-        return (await accountBlock.send()).hash
-    }, 3)
+            await accountBlock.sign()
+        
+            return (await accountBlock.send()).hash
+        }catch(err){
+            if(tries !== 300){
+                await wait(10000)
+                await waitForNextSnapshotBlock()
+            }
+            throw err
+        }
+    }, 301)
 }
 
 export async function getBalances(address: string){

@@ -11,3 +11,9 @@ export async function retryAsync<T=void>(func:(tries?:number)=>Promise<T>, tries
 export function randomFromArray<result extends any>(array: result[]):result{
     return array[array.length * Math.random() | 0] 
 }
+
+export function wait(ms:number):Promise<void>{
+    return new Promise<void>((resolve) => {
+        setTimeout(resolve, ms)
+    })
+}

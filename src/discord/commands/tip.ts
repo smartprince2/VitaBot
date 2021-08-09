@@ -97,6 +97,9 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
         ])
 
         await viteQueue.queueAction(address.address, async () => {
+            try{
+                await message.react("💊")
+            }catch{}
             const balances = await getBalances(address.address)
             const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
@@ -119,8 +122,9 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
                     token
                 )
             }
-            await message.react("873558842699571220")
-            await message.react("💊")
+            try{
+                await message.react("873558842699571220")
+            }catch{}
         })
     }
 }
