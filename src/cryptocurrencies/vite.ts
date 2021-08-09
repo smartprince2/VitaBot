@@ -7,6 +7,7 @@ import viteQueue from "./viteQueue";
 import { convert, tokenNameToDisplayName } from "../common/convert";
 import PoWQueue from "./PoWQueue";
 import { parseDiscordUser } from "../discord/util";
+import { retryAsync } from "../common/util";
 
 const skipBlocks = []
 
@@ -39,18 +40,20 @@ export async function receive(address:IAddress, block:any){
     // Ok, we received a deposit/tip
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
     await viteQueue.queueAction(address.address, async () => {
-        const accountBlock = vite.accountBlock.createAccountBlock("receive", {
-            address: address.address,
-            sendBlockHash: block.hash
-        })
-        accountBlock.setProvider(wsProvider)
-        .setPrivateKey(keyPair.privateKey)
-        await accountBlock.autoSetPreviousAccountBlock()
-        await PoWQueue.queueAction("vite", async () => {
-            await accountBlock.PoW()
-        })
-        await accountBlock.sign()
-        await accountBlock.send()
+        await retryAsync(async () => {
+            const accountBlock = vite.accountBlock.createAccountBlock("receive", {
+                address: address.address,
+                sendBlockHash: block.hash
+            })
+            accountBlock.setProvider(wsProvider)
+            .setPrivateKey(keyPair.privateKey)
+            await accountBlock.autoSetPreviousAccountBlock()
+            await PoWQueue.queueAction("vite", async () => {
+                await accountBlock.PoW()
+            })
+            await accountBlock.sign()
+            await accountBlock.send()
+        }, 3)
     })
 
     // Don't send dm on random coins, for now just tell for registered coins.
@@ -130,21 +133,23 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
     
-    const accountBlock = vite.accountBlock.createAccountBlock("send", {
-        toAddress: toAddress,
-        address: fromAddress.address,
-        tokenId: tokenId,
-        amount: amount
-    })
-    accountBlock.setProvider(wsProvider)
-    .setPrivateKey(keyPair.privateKey)
-    await accountBlock.autoSetPreviousAccountBlock()
-    await PoWQueue.queueAction("vite", async () => {
-        await accountBlock.PoW()
-    })
-    await accountBlock.sign()
-
-    return (await accountBlock.send()).hash
+    return await retryAsync(async () => {
+        const accountBlock = vite.accountBlock.createAccountBlock("send", {
+            toAddress: toAddress,
+            address: fromAddress.address,
+            tokenId: tokenId,
+            amount: amount
+        })
+        accountBlock.setProvider(wsProvider)
+        .setPrivateKey(keyPair.privateKey)
+        await accountBlock.autoSetPreviousAccountBlock()
+        await PoWQueue.queueAction("vite", async () => {
+            await accountBlock.PoW()
+        })
+        await accountBlock.sign()
+    
+        return (await accountBlock.send()).hash
+    }, 3)
 }
 
 export async function getBalances(address: string){

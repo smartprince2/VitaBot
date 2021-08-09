@@ -57,6 +57,9 @@ client.on("messageCreate", async message => {
         await cmd.execute(message, args, command)
     }catch(err){
         console.error(err)
+        if(!(err instanceof Error) && "error" in err){
+            err = JSON.stringify(err.error, null, "    ")
+        }
         message.channel.send({
             content: `The command ${command} throwed an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
             embeds: [
