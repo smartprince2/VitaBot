@@ -77,12 +77,7 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
             })())
         }
         await Promise.all(promises)
-        if(recipients.length === 0){
-            if(errors.length > 0){
-                await message.reply(`Couldn't resolve these users: ${errors.join(", ")}`)
-            }
-            return
-        }
+        if(recipients.length === 0)return
 
         const amountParsed = new BigNumber(amount)
         const totalAsked = amountParsed.times(recipients.length)
