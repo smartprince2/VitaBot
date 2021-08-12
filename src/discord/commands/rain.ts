@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { bulkSend, getBalances, getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";
@@ -20,8 +20,9 @@ export default new class Rain implements Command {
             )return
 
             let hasRole = false
+            const member = await message.member.fetch()
             for(const role of this.allowedRoles){
-                if(!message.member.roles.cache.has(role))continue
+                if(!member.roles.cache.has(role))continue
                 hasRole = true
                 break
             }
@@ -66,32 +67,37 @@ Examples:
             await message.reply(`The \`${command}\` is not enabled in this server. Please contact the bot's operator`)
             return
         }
-        if(![
+        /*if(![
             "696481194443014174",
             "871221803580813373",
-            "112006418676113408"
+            "112006418676113408",
+            "659508168304492565",
+            "553060199510966293"
         ].includes(message.author.id)){
             await message.reply("This command is currently limited.")
             return
-        }
+        }*/
         const amountRaw = args[0]
         if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw)){
             await help.execute(message, [command])
             return
         }
         const amount = new BigNumber(amountRaw)
-        /*if(amount.isLessThan(1000)){
-            await message.reply("The minimum amount to rain is 1000 VITC.")
+        if(amount.isLessThan(100)){
+            await message.reply("The minimum amount to rain is 100 VITC.")
             return
-        }*/
-        const userList = ["536124399644966922", "872912021379752026"]/*Object.keys(this.activeList)
-            .filter(e => e !== message.author.id)*/
-        /*if(userList.length < 5){
-            await message.reply(`There are less than 5 active users. Cannot rain.`)
+        }
+        const userList = Object.keys(this.activeList)
+            .filter(e => e !== message.author.id)
+        if(userList.length < 2){
+            await message.reply(`There are less than 2 active users. Cannot rain. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")}`)
             return
-        }*/
-        const individualAmount = amount.div(userList.length)
-        .sd(18, BigNumber.ROUND_DOWN)
+        }
+        const individualAmount = new BigNumber(
+            amount.div(userList.length)
+            .times(100).toFixed()
+            .split(".")[0]
+        ).div(100)
         const totalAsked = individualAmount.times(userList.length)
         const [
             address,
@@ -115,23 +121,12 @@ Examples:
             const balance = new BigNumber(balances[token])
             const totalAskedRaw = new BigNumber(convert(totalAsked, "VITC", "RAW"))
             if(balance.isLessThan(totalAskedRaw)){
-                await message.channel.send({
-                    content: `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} VITC but you only have ${convert(balance, "RAW", "VITC")} VITC in your balance. Use .deposit to top up your account.`,
-                    reply: {
-                        messageReference: message,
-                        failIfNotExists: false
-                    }
-                })
+                await message.reply(
+                    `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} VITC but you only have ${convert(balance, "RAW", "VITC")} VITC in your balance. Use .deposit to top up your account.`
+                )
                 return
             }
-            for(const recipient of addresses){
-                await sendVITE(
-                    address.seed, 
-                    recipient.address, 
-                    convert(individualAmount, "VITC", "RAW").split(".")[0], 
-                    token
-                )
-            }
+            await bulkSend(address, addresses.map(e => e.address), convert(individualAmount, "VITC", "RAW"), token)
             try{
                 await message.react("873558842699571220")
             }catch{}

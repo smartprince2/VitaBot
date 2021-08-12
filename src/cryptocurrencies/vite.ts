@@ -7,6 +7,12 @@ import viteQueue from "./viteQueue";
 import { convert, tokenNameToDisplayName } from "../common/convert";
 import { parseDiscordUser } from "../discord/util";
 import { retryAsync, wait } from "../common/util";
+import BigNumber from "bignumber.js";
+import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction";
+import { EventEmitter } from "events";
+import PoWManager from "./PoWManager";
+
+const events = new EventEmitter()
 
 const skipBlocks = []
 let promisesResolveSnapshotBlocks = []
@@ -15,7 +21,7 @@ const wsService = new WS_RPC(process.env.VITE_WS)
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
     const SnapshotBlockEvent = await wsProvider.subscribe("createSnapshotBlockSubscription")
     SnapshotBlockEvent.on(() => {
-        for(let r of promisesResolveSnapshotBlocks){
+        for(const r of promisesResolveSnapshotBlocks){
             r()
         }
         promisesResolveSnapshotBlocks = []
@@ -66,6 +72,8 @@ export async function receive(address:IAddress, block:any){
             await accountBlock.send()
         }, 3)
     })
+
+    events.emit("receive_"+block.hash)
 
     // Don't send dm on random coins, for now just tell for registered coins.
     if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
@@ -140,11 +148,50 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
     }
 }
 
+export async function bulkSend(from: IAddress, recipients: string[], amount: string, tokenId: string){
+    const botAddress = await getVITEAddressOrCreateOne(client.user.id, "Discord")
+    const hash = await sendVITE(from.seed, botAddress.address, new BigNumber(amount).times(recipients.length).toFixed(), tokenId)
+    await new Promise(r => {
+        events.on("receive_"+hash, r)
+    })
+    const transactions = await rawBulkSend(botAddress, recipients, amount, tokenId, from.handles[0])
+    return processBulkTransactions(transactions)
+}
+
+export async function processBulkTransactions(transactions:IPendingTransactions[]){
+    const hashes = []
+    while(transactions[0]){
+        const transaction = transactions.shift()
+        const hash = await viteQueue.queueAction(transaction.address.address, async () => {
+            return sendVITE(transaction.address.seed, transaction.toAddress, transaction.amount, transaction.tokenId)
+        })
+        await transaction.delete()
+        hashes.push(hash)
+    }
+    return hashes
+}
+
+export async function rawBulkSend(from: IAddress, recipients: string[], amount: string, tokenId: string, handle: string){
+    const promises:Promise<IPendingTransactions>[] = []
+    for(const recipient of recipients){
+        promises.push(PendingTransaction.create({
+            network: "VITE",
+            address: from,
+            toAddress: recipient,
+            handle,
+            amount,
+            tokenId
+        }))
+    }
+    return Promise.all(promises)
+}
+
 export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string):Promise<string>{
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
     
     return await retryAsync(async (tries) => {
+        // eslint-disable-next-line no-useless-catch
         try{
             const accountBlock = vite.accountBlock.createAccountBlock("send", {
                 toAddress: toAddress,
@@ -155,18 +202,32 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
             accountBlock.setProvider(wsProvider)
             .setPrivateKey(keyPair.privateKey)
             await accountBlock.autoSetPreviousAccountBlock()
-            await accountBlock.PoW()
+            const quota = await wsProvider.request("contract_getQuotaByAccount", fromAddress.address)
+            const availableQuota = new BigNumber(quota.currentQuota).div(21000)
+            console.log(`quota`, quota)
+            if(availableQuota.isLessThan(1)){
+                await accountBlock.PoW()
+                /*
+                const difficulty = await accountBlock.getDifficulty()
+                const threshold = (2**256/(1+1/parseInt(difficulty))).toString(16)
+                const getNonceHashBuffer = Buffer.from(accountBlock.originalAddress + accountBlock.previousHash, "hex");
+                const getNonceHash = vite.utils.blake2bHex(getNonceHashBuffer, null, 32);
+                const work = await PoWManager.computeWork(getNonceHash, threshold)
+                console.log(threshold, difficulty, work)
+                accountBlock.setDifficulty(difficulty)
+                accountBlock.setNonce(Buffer.from(work, "hex").toString("base64"))*/
+            }
             await accountBlock.sign()
         
             return (await accountBlock.send()).hash
         }catch(err){
-            if(tries !== 300){
-                await wait(10000)
-                await waitForNextSnapshotBlock()
+            throw err
+            if(tries !== 2){
+                await wait(20000)
             }
             throw err
         }
-    }, 301)
+    }, 1)
 }
 
 export async function getBalances(address: string){
@@ -211,4 +272,8 @@ export async function getBalances(address: string){
             if(shouldStop)break
         }
     }
+    const pending = await PendingTransaction.find()
+    .populate("address")
+    .exec()
+    await processBulkTransactions(pending)
 })()

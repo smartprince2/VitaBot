@@ -1,3 +1,8 @@
+# modules
 node_modules
+# built bot
 dist
+# environnement variables
 .env
+# Export of the database, mapping discord users to their vite address
+users.json

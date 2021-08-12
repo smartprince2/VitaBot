@@ -10,7 +10,7 @@
 
 import { EventEmitter } from "events"
 
-export class NanoMixerEventEmitter<events extends {
+export class VitaBotEventEmitter <events extends {
     [key: string]: any[]
 }> extends EventEmitter {
     on<key extends keyof events>(event:Exclude<key, number>, listener:(...args:events[key]) => void){
@@ -54,7 +54,7 @@ export class NanoMixerEventEmitter<events extends {
     }
 }
 
-const events = new NanoMixerEventEmitter<{
+const events = new VitaBotEventEmitter<{
     
 }>()
 
