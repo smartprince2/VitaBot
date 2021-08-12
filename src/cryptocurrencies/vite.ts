@@ -10,7 +10,7 @@ import { retryAsync, wait } from "../common/util";
 import BigNumber from "bignumber.js";
 import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction";
 import { EventEmitter } from "events";
-import PoWManager from "./PoWManager";
+//import PoWManager from "./PoWManager";
 
 const events = new EventEmitter()
 

@@ -56,7 +56,7 @@ Examples:
 **Rain 1000 ${tokenNameToDisplayName("VITC")} !**
 .vrain 1000`
 
-    alias = ["vrain", "rain"]
+    alias = ["vrain", "rain", "vitaminrain"]
     usage = "<amount>"
 
     allowedGuilds = process.env.DISCORD_SERVER_IDS.split(",")

@@ -20,7 +20,7 @@ Examples:
 **Tip to one random person 50 ${tokenNameToDisplayName("VITC")} !**
 .vrandom 50`
 
-    alias = ["vrandom", "random"]
+    alias = ["vr", "vrandom", "random"]
     usage = "<amount>"
 
     allowedGuilds = process.env.DISCORD_SERVER_IDS.split(",")

@@ -58,6 +58,7 @@ client.on("messageCreate", async message => {
     }catch(err){
         console.error(err)
         if(!(err instanceof Error) && "error" in err){
+            // eslint-disable-next-line no-ex-assign
             err = JSON.stringify(err.error, null, "    ")
         }
         message.channel.send({
