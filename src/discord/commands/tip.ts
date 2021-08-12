@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { bulkSend, getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { generateDefaultEmbed, isDiscordUserArgument, parseDiscordUser } from "../util";
@@ -114,10 +114,17 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
                 })
                 return
             }
-            for(const recipient of addresses){
+            if(addresses.length > 1){
+                await bulkSend(
+                    address, 
+                    addresses.map(e => e.address), 
+                    convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
+                    token
+                )
+            }else{
                 await sendVITE(
                     address.seed, 
-                    recipient.address, 
+                    addresses[0].address, 
                     convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
                     token
                 )

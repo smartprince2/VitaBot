@@ -126,7 +126,12 @@ Examples:
                 )
                 return
             }
-            await bulkSend(address, addresses.map(e => e.address), convert(individualAmount, "VITC", "RAW"), token)
+            await bulkSend(
+                address, 
+                addresses.map(e => e.address), 
+                convert(individualAmount, "VITC", "RAW"), 
+                token
+            )
             try{
                 await message.react("873558842699571220")
             }catch{}
