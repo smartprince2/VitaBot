@@ -33,12 +33,15 @@ Examples:
             // eslint-disable-next-line prefer-const
             ...recipientsRaw
         ] = args
-        if(!amount || !currencyOrRecipient)return help.execute(message, [command])
-        if(!/^\d+(\.\d+)?$/.test(amount))return help.execute(message, [command])
+        currencyOrRecipient = currencyOrRecipient || "vitc"
+        if(!amount || !/^\d+(\.\d+)?$/.test(amount))return help.execute(message, [command])
         if(isDiscordUserArgument(currencyOrRecipient)){
             // user here
             recipientsRaw.push(currencyOrRecipient)
             currencyOrRecipient = "vitc"
+        }
+        if(message.mentions.repliedUser){
+            recipientsRaw.push(message.mentions.repliedUser.id)
         }
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
         if(command !== "tip" && currencyOrRecipient !== "VITC"){
