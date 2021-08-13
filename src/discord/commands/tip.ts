@@ -72,7 +72,9 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
                     // bot
                     if(user.bot)throw new Error()
                     // same person sending to itself
-                    if(user.id === message.author.id)return 
+                    if(user.id === message.author.id)return
+                    // User already resolved, double pinging.
+                    if(recipients.find(e => e.id === user.id))return
                     recipients.push(user)
                 }catch(err){
                     errors.push(recipient)
