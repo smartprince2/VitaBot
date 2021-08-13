@@ -79,8 +79,9 @@ Examples:
                 await message.react("873558842699571220")
             }catch{}
             try{
+                const u = await client.users.fetch(user)
                 await message.author.send({
-                    content: `Tipped ${convert(totalAskedRaw, "RAW", "VITC")} VITC to <@${user}> !`,
+                    content: `Tipped ${convert(totalAskedRaw, "RAW", "VITC")} VITC to ${u.tag} !`,
                     allowedMentions: {
                         users: [user]
                     }

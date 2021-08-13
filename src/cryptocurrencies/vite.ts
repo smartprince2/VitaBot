@@ -17,7 +17,13 @@ const events = new EventEmitter()
 const skipBlocks = []
 let promisesResolveSnapshotBlocks = []
 
-const wsService = new WS_RPC(process.env.VITE_WS)
+const wsService = new WS_RPC(process.env.VITE_WS, 6e5, {
+    protocol: "",
+    headers: "",
+    clientConfig: "",
+    retryTimes: Infinity,
+    retryInterval: 10000
+})
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
     const SnapshotBlockEvent = await wsProvider.subscribe("createSnapshotBlockSubscription")
     SnapshotBlockEvent.on(() => {
@@ -247,33 +253,37 @@ export async function getBalances(address: string){
 
 (async () => {
     // Start of the code ! Time to receive as most transactions as possible !
-    const addresses = await Address.find()
-    for(const address of addresses){
-        // eslint-disable-next-line no-constant-condition
-        while(true){
-            const shouldStop = await (async () => {
-                const blocks = await wsProvider.request(
-                    "ledger_getUnreceivedBlocksByAddress",
-                    address.address,
-                    0,
-                    10
-                )
-                if(blocks.length === 0)return true
-                for(const block of blocks){
-                    if(skipBlocks.includes(block.hash))continue
-                    skipBlocks.push(block.hash)
-            
-                    await receive(address, block)
-                    skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
+    await Promise.all([
+        Address.find()
+        .then(async addresses => {
+            for(const address of addresses){
+                // eslint-disable-next-line no-constant-condition
+                while(true){
+                    const shouldStop = await (async () => {
+                        const blocks = await wsProvider.request(
+                            "ledger_getUnreceivedBlocksByAddress",
+                            address.address,
+                            0,
+                            10
+                        )
+                        if(blocks.length === 0)return true
+                        for(const block of blocks){
+                            if(skipBlocks.includes(block.hash))continue
+                            skipBlocks.push(block.hash)
+                    
+                            await receive(address, block)
+                            skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
+                        }
+                        if(blocks.length !== 10)return true
+                        return false
+                    })()
+                    if(shouldStop)break
                 }
-                if(blocks.length !== 10)return true
-                return false
-            })()
-            if(shouldStop)break
-        }
-    }
-    const pending = await PendingTransaction.find()
-    .populate("address")
-    .exec()
-    await processBulkTransactions(pending)
+            }
+        }),
+        PendingTransaction.find()
+        .populate("address")
+        .exec()
+        .then(processBulkTransactions)
+    ])
 })()
