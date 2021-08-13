@@ -16,6 +16,7 @@ const events = new EventEmitter()
 
 const skipBlocks = []
 let promisesResolveSnapshotBlocks = []
+const hashToSender = {}
 
 const wsService = new WS_RPC(process.env.VITE_WS, 6e5, {
     protocol: "",
@@ -102,7 +103,19 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
         let mention = "Unknown User"
         switch(platform){
             case "Discord": {
-                const user = await parseDiscordUser(id)
+                let user = await parseDiscordUser(id)
+                if(user.id === client.user.id){
+                    //let's try to resolve the original id
+                    const sender = hashToSender[block.hash]
+                    if(sender){
+                        delete hashToSender[block.hash]
+                        const id = sender.split(".")[0]
+                        const tempUser = await parseDiscordUser(id)
+                        if(tempUser){
+                            user = tempUser
+                        }
+                    }
+                }
                 if(user){
                     mention = user.tag
                 }
@@ -171,6 +184,7 @@ export async function processBulkTransactions(transactions:IPendingTransactions[
         const hash = await viteQueue.queueAction(transaction.address.address, async () => {
             return sendVITE(transaction.address.seed, transaction.toAddress, transaction.amount, transaction.tokenId)
         })
+        hashToSender[hash] = transaction.handle
         await transaction.delete()
         hashes.push(hash)
     }
