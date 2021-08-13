@@ -42,6 +42,21 @@ export default new class Rain implements Command {
                 }, 30*60*1000);
             }
         })
+        client.on("messageDelete", message => {
+            if(!message.content || message.content.length < 3)return
+            if(
+                !message.guildId ||
+                message.author.bot || 
+                !this.allowedGuilds.includes(message.guildId)
+            )return
+            if(!this.activeStats[message.author.id])return
+
+            this.activeStats[message.author.id]--
+            if(this.activeStats[message.author.id] < 5){
+                if(this.activeList[message.author.id])clearTimeout(this.activeList[message.author.id])
+                delete this.activeList[message.author.id]
+            }
+        })
     }
 
     activeStats = {}
