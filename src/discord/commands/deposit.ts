@@ -34,13 +34,7 @@ export default new class Deposit implements Command {
             }]
         })
         if(message.guild){
-            await message.channel.send({
-                content: "I've sent your deposit address in your DM !",
-                reply: {
-                    messageReference: message,
-                    failIfNotExists: false
-                }
-            })
+            await message.channel.send("I've sent your deposit address in your DM !")
         }
     }
 }

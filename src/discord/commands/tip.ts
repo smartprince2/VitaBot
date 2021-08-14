@@ -51,8 +51,7 @@ Examples:
 
         if(!Object.keys(tokenIds).includes(currencyOrRecipient)){
             const embed = generateDefaultEmbed()
-            .setDescription(`The token ${currencyOrRecipient} isn't supported. Supported tokens are:
-${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
+            .setDescription(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
             await message.channel.send({
                 embeds: [embed]
             })
@@ -110,13 +109,12 @@ ${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW").split(".")[0])
             if(balance.isLessThan(totalAskedRaw)){
-                await message.channel.send({
-                    content: `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} ${currencyOrRecipient} but you only have ${convert(totalAsked, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in your balance. Use .deposit to top up your account.`,
-                    reply: {
-                        messageReference: message,
-                        failIfNotExists: false
-                    }
-                })
+                try{
+                    await message.react("❌")
+                }catch{}
+                await message.author.send(
+                    `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} ${currencyOrRecipient} but you only have ${convert(balance, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in your balance. Use .deposit to top up your account.`
+                )
                 return
             }
             if(addresses.length > 1){

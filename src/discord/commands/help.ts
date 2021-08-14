@@ -49,18 +49,15 @@ ${process.env.DISCORD_PREFIX}help deposit`
             if(page > totalPages){
                 embed.setTitle("Invalid Page")
                 .setDescription(`You asked for page ${page}/${totalPages}, which is out of range.`)
-                await message.channel.send({
-                    embeds: [embed]
-                })
-                return
-            }
-            const startIndex = (page-1)*pagination
-            const commands = rawCommands.slice(startIndex, pagination)
-            embed.setTitle("Command Overview")
-            .setDescription(`Use \`.help ${this.usage}\` to get more informations about a specific command or to change the page. 
-You are currently at the ${page}/${totalPages} page.`)
-            for(const command of commands){
-                embed.addField(`${process.env.DISCORD_PREFIX}${command.alias[0]} ${command.usage}`, command.description)
+            }else{
+                const startIndex = (page-1)*pagination
+                const commands = rawCommands.slice(startIndex, pagination)
+                embed.setTitle("Command Overview")
+                .setDescription(`Use \`.help ${this.usage}\` to get more informations about a specific command or to change the page. 
+    You are currently at the ${page}/${totalPages} page.`)
+                for(const command of commands){
+                    embed.addField(`${process.env.DISCORD_PREFIX}${command.alias[0]} ${command.usage}`, command.description)
+                }
             }
         }else{
             const cmd = commands.get(command)
@@ -72,8 +69,11 @@ You are currently at the ${page}/${totalPages} page.`)
             embed.setTitle(`Command Overview`)
             .setDescription(description)
         }
-        await message.channel.send({
+        await message.author.send({
             embeds: [embed]
         })
+        if(message.guild){
+            await message.reply("I've sent the help menu in your DM !")
+        }
     }
 }

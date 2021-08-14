@@ -64,7 +64,10 @@ Examples:
             const balance = new BigNumber(balances[token])
             const totalAskedRaw = new BigNumber(convert(amount, "VITC", "RAW").split(".")[0])
             if(balance.isLessThan(totalAskedRaw)){
-                await message.reply(
+                try{
+                    await message.react("❌")
+                }catch{}
+                await message.author.send(
                     `You don't have enough money to cover this tip. You need ${amount.toFixed()} VITC but you only have ${convert(balance, "RAW", "VITC")} VITC in your balance. Use .deposit to top up your account.`
                 )
                 return

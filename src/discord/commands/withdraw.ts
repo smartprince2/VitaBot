@@ -54,8 +54,7 @@ Examples:
                 currencyOrRecipient = currencyOrRecipient.toLowerCase()
             }else{
                 const embed = generateDefaultEmbed()
-                .setDescription(`The token ${currencyOrRecipient} isn't supported. Supported tokens are:
-${Object.keys(tokenIds).map(t => tokenNameToDisplayName(t)).join("\n")}`)
+                .setDescription(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
                 await message.channel.send({
                     embeds: [embed]
                 })

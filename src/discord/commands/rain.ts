@@ -46,7 +46,6 @@ export default new class Rain implements Command {
             if(!message.content || message.content.length < 3)return
             if(
                 !message.guildId ||
-                message.author.bot || 
                 !this.allowedGuilds.includes(message.guildId)
             )return
             if(!this.activeStats[message.author.id])return
@@ -82,16 +81,6 @@ Examples:
             await message.reply(`The \`${command}\` is not enabled in this server. Please contact the bot's operator`)
             return
         }
-        /*if(![
-            "696481194443014174",
-            "871221803580813373",
-            "112006418676113408",
-            "659508168304492565",
-            "553060199510966293"
-        ].includes(message.author.id)){
-            await message.reply("This command is currently limited.")
-            return
-        }*/
         const amountRaw = args[0]
         if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw)){
             await help.execute(message, [command])
@@ -136,7 +125,10 @@ Examples:
             const balance = new BigNumber(balances[token])
             const totalAskedRaw = new BigNumber(convert(totalAsked, "VITC", "RAW"))
             if(balance.isLessThan(totalAskedRaw)){
-                await message.reply(
+                try{
+                    await message.react("❌")
+                }catch{}
+                await message.author.send(
                     `You don't have enough money to cover this tip. You need ${totalAsked.toFixed()} VITC but you only have ${convert(balance, "RAW", "VITC")} VITC in your balance. Use .deposit to top up your account.`
                 )
                 return
