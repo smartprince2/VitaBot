@@ -66,17 +66,23 @@ export async function receive(address:IAddress, block:any){
     // Ok, we received a deposit/tip
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
     await viteQueue.queueAction(address.address, async () => {
-        await retryAsync(async () => {
-            const accountBlock = vite.accountBlock.createAccountBlock("receive", {
-                address: address.address,
-                sendBlockHash: block.hash
-            })
-            accountBlock.setProvider(wsProvider)
-            .setPrivateKey(keyPair.privateKey)
-            await accountBlock.autoSetPreviousAccountBlock()
-            await accountBlock.PoW()
-            await accountBlock.sign()
-            await accountBlock.send()
+        await retryAsync(async (tries) => {
+            try{
+                const accountBlock = vite.accountBlock.createAccountBlock("receive", {
+                    address: address.address,
+                    sendBlockHash: block.hash
+                })
+                accountBlock.setProvider(wsProvider)
+                .setPrivateKey(keyPair.privateKey)
+                await accountBlock.autoSetPreviousAccountBlock()
+                await accountBlock.PoW()
+                await accountBlock.sign()
+                await accountBlock.send()
+            }catch(err){
+                if(tries !== 2)await wait(20000)
+                console.log(address)
+                throw err
+            }
         }, 3)
     })
 
@@ -211,7 +217,6 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
     
     return await retryAsync(async (tries) => {
-        // eslint-disable-next-line no-useless-catch
         try{
             const accountBlock = vite.accountBlock.createAccountBlock("send", {
                 toAddress: toAddress,
@@ -241,7 +246,6 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
         
             return (await accountBlock.send()).hash
         }catch(err){
-            throw err
             if(tries !== 2){
                 await wait(20000)
             }
@@ -265,39 +269,45 @@ export async function getBalances(address: string){
     return balances
 }
 
+export async function searchStuckTransactions(){
+    const addresses = await Address.find()
+    for(const address of addresses){
+        try{
+            // eslint-disable-next-line no-constant-condition
+            while(true){
+                const shouldStop = await (async () => {
+                    const blocks = await wsProvider.request(
+                        "ledger_getUnreceivedBlocksByAddress",
+                        address.address,
+                        0,
+                        10
+                    )
+                    if(blocks.length === 0)return true
+                    for(const block of blocks){
+                        if(skipBlocks.includes(block.hash))continue
+                        skipBlocks.push(block.hash)
+                
+                        await receive(address, block)
+                        skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
+                    }
+                    return false
+                })()
+                if(shouldStop)break
+            }
+        }catch(err){
+            console.error(err)
+        }
+    }
+}
+
 (async () => {
     // Start of the code ! Time to receive as most transactions as possible !
     await Promise.all([
-        Address.find()
-        .then(async addresses => {
-            for(const address of addresses){
-                // eslint-disable-next-line no-constant-condition
-                while(true){
-                    const shouldStop = await (async () => {
-                        const blocks = await wsProvider.request(
-                            "ledger_getUnreceivedBlocksByAddress",
-                            address.address,
-                            0,
-                            10
-                        )
-                        if(blocks.length === 0)return true
-                        for(const block of blocks){
-                            if(skipBlocks.includes(block.hash))continue
-                            skipBlocks.push(block.hash)
-                    
-                            await receive(address, block)
-                            skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
-                        }
-                        if(blocks.length !== 10)return true
-                        return false
-                    })()
-                    if(shouldStop)break
-                }
-            }
-        }),
+        searchStuckTransactions(),
         PendingTransaction.find()
         .populate("address")
         .exec()
         .then(processBulkTransactions)
     ])
+    setInterval(searchStuckTransactions, 10*60*1000)
 })()
