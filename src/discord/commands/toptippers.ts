@@ -41,7 +41,7 @@ Examples:
         const embed = generateDefaultEmbed()
         .setTitle("Top 15 tippers")
         .setDescription(tippers.map((tipper, i) => {
-            return `${i+1}. **${tipper.amount} VITC** - By **${tipper.user?.tag}**`
+            return `${i+1}. **${Math.floor(tipper.amount*100)/100} VITC** - By **${tipper.user?.tag}**`
         }).join("\n") || "Looks like the list is empty...")
 
 
