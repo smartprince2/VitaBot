@@ -24,7 +24,7 @@ const wsService = new WS_RPC(process.env.VITE_WS, 6e5, {
     clientConfig: "",
     retryTimes: Infinity,
     retryInterval: 10000
-})
+})/*
 const powWSService = new WS_RPC("wss://node-tokyo.vite.net/ws", 6e5, {
     protocol: "",
     headers: "",
@@ -32,7 +32,7 @@ const powWSService = new WS_RPC("wss://node-tokyo.vite.net/ws", 6e5, {
     retryTimes: Infinity,
     retryInterval: 10000
 })
-export const powWSProvider = new vite.ViteAPI(powWSService, async () => {})
+export const powWSProvider = new vite.ViteAPI(powWSService, async () => {})*/
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
     const SnapshotBlockEvent = await wsProvider.subscribe("createSnapshotBlockSubscription")
     SnapshotBlockEvent.on(() => {
@@ -83,7 +83,7 @@ export async function receive(address:IAddress, block:any){
                 accountBlock.setProvider(wsProvider)
                 .setPrivateKey(keyPair.privateKey)
                 await accountBlock.autoSetPreviousAccountBlock()
-                accountBlock.setProvider(powWSProvider)
+                //accountBlock.setProvider(powWSProvider)
                 await accountBlock.PoW()
                 accountBlock.setProvider(wsProvider)
                 await accountBlock.sign()
@@ -257,7 +257,7 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
             const quota = await wsProvider.request("contract_getQuotaByAccount", fromAddress.address)
             const availableQuota = new BigNumber(quota.currentQuota).div(21000)
             if(availableQuota.isLessThan(1)){
-                accountBlock.setProvider(powWSProvider)
+                //accountBlock.setProvider(powWSProvider)
                 await accountBlock.PoW()
                 accountBlock.setProvider(wsProvider)
                 /*const difficulty = await accountBlock.getDifficulty()
