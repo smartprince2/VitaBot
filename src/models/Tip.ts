@@ -1,28 +1,29 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { Networks } from "../common/constants";
 
-export interface ILeaderboard extends Document {
-    network: Networks
-    address: string,
-    amount: {
-        [token: string]: number
-    }
+export interface ITip extends Document {
+    amount: number,
+    user_id: string,
+    date: Date,
+    txhash: string
 }
 
-const LeaderboardSchema = new Schema<ILeaderboard>({
-    network: {
+const TipSchema = new Schema<ITip>({
+    amount: {
+        type: Number,
+        required: true
+    },
+    user_id: {
         type: String,
         required: true
     },
-    address: {
-        required: true,
-        unique: true,
-        type: String
+    date: {
+        type: Date,
+        required: true
     },
-    amount: {
-        type: Object,
+    txhash: {
+        type: String,
         required: true
     }
 })
 
-export default mongoose.model<ILeaderboard>("Leaderboard", LeaderboardSchema);
+export default mongoose.model<ITip>("Tip", TipSchema);

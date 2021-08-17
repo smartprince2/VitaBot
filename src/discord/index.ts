@@ -6,6 +6,9 @@ import Command from "./command"
 import { generateDefaultEmbed } from "./util"
 import { VITABOT_GITHUB } from "../common/constants"
 import { dbPromise } from "../common/load-db"
+import { FAUCET_CHANNEL_ID, initFaucet } from "./faucet"
+import { searchAirdrops } from "./AirdropManager"
+import { durationUnits } from "../common/util"
 
 export const client = new Discord.Client({
     allowedMentions: {
@@ -37,10 +40,18 @@ client.on("ready", () => {
     })
 
     botRegexp = new RegExp("^<@!?"+client.user.id+">$")
+
+    initFaucet()
+    
+    searchAirdrops()
+    .catch(()=>{})
+    // every hour
+    setTimeout(searchAirdrops, durationUnits.h)
 })
 
 const prefix = process.env.DISCORD_PREFIX
 client.on("messageCreate", async message => {
+    if(message.channel.id === FAUCET_CHANNEL_ID)return
     if(botRegexp.test(message.content)){
         message.reply("Hi ! If you're wondering, my prefix is `"+prefix+"` ! You can see my list of commands by doing `"+prefix+"help` ! 💊")
         return
@@ -87,7 +98,7 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
         const mod = await import(join(__dirname, "commands", file.name))
         const command:Command = mod.default
 
-        rawCommands.push(command)
+        if(!command.hidden)rawCommands.push(command)
         for(const alias of command.alias){
             commands.set(alias, command)
         }

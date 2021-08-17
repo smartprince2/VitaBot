@@ -6,6 +6,7 @@ export default new class Deposit implements Command {
     extended_description = "No need for a description"
     alias = ["restart"]
     usage = ""
+    hidden = true
 
     async execute(message:Message){
         if(![

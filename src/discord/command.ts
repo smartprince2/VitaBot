@@ -9,6 +9,7 @@ export default class Command {
     // <> is a mandatory argument
     // {} is an optional argument 
     usage: string
+    hidden?: boolean
 
     async execute(message:Message, args:string[], command:string):Promise<void>{
         throw new CommandError("The command wasn't defined in its file.")

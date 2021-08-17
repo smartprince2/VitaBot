@@ -1,19 +1,10 @@
 import { Message } from "discord.js";
-import { tokenIds } from "../../common/constants";
-import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import Tip from "../../models/Tip";
 import Command from "../command";
-import discordqueue from "../discordqueue";
-import help from "./help";
-import BigNumber from "bignumber.js"
-import viteQueue from "../../cryptocurrencies/viteQueue";
-import { client } from "..";
-import rain from "./rain";
-import { randomFromArray } from "../../common/util";
 
 export default new class Tipstats implements Command {
-    description = "Stats of the bot"
-    extended_description = `Display VitaBot's statistics.
+    description = "Your tipping stats"
+    extended_description = `Display your tipping stats.
 
 Examples:
 **See statistics**
@@ -22,7 +13,43 @@ Examples:
     alias = ["tipstats"]
     usage = ""
 
-    async execute(message:Message, args: string[], command: string){
+    async execute(message:Message){
+        const [
+            numOfTips,
+            total,
+            biggest
+        ] = await Promise.all([
+            Tip.countDocuments({
+                user_id: message.author.id
+            }),
+            Tip.aggregate([
+                {
+                    $match: {
+                        user_id: message.author.id
+                    }
+                },
+                {
+                    $group: {
+                        _id: "$user_id",
+                        sum: {
+                            $sum: "$amount"
+                        }
+                    }
+                }
+            ]),
+            Tip.find({
+                user_id: message.author.id
+            }).sort({amount: -1}).limit(1)
+        ])
         
+        let totalAmount = 0
+        if(total[0]){
+            totalAmount = total[0].sum
+        }
+        let biggestAmount = 0
+        if(biggest[0]){
+            biggestAmount = biggest[0].amount
+        }
+        await message.reply(`You have sent **${numOfTips}** tips totalling **${totalAmount} VITC**. Your biggest tip of all time is **${biggestAmount} VITC**`)
     }
 }

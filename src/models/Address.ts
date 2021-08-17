@@ -5,7 +5,8 @@ export interface IAddress extends Document {
     network: Networks
     seed: string,
     address: string,
-    handles: string[]
+    handles: string[],
+    paused: boolean
 }
 
 const AddressSchema = new Schema<IAddress>({
@@ -29,7 +30,8 @@ const AddressSchema = new Schema<IAddress>({
             unique: true,
             type: String
         }
-    ]
+    ],
+    paused: Boolean
 })
 
 export default mongoose.model<IAddress>("Address", AddressSchema);

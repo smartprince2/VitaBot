@@ -4,12 +4,13 @@ import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { bulkSend, getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
-import { generateDefaultEmbed, isDiscordUserArgument, parseDiscordUser } from "../util";
+import { isDiscordUserArgument, parseDiscordUser, throwFrozenAccountError } from "../util";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
+import Tip from "../../models/Tip";
 
-export default new class Tip implements Command {
+export default new class TipCommand implements Command {
     description = "Tip someone on Discord"
     extended_description = `Tip someone over Discord. 
 If they don't have an account on the tipbot, it will create one for them.
@@ -50,14 +51,24 @@ Examples:
         }
 
         if(!Object.keys(tokenIds).includes(currencyOrRecipient)){
-            const embed = generateDefaultEmbed()
-            .setDescription(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
-            await message.channel.send({
-                embeds: [embed]
-            })
+            try{
+                await message.react("❌")
+            }catch{}
+            message.author.send(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
             return
         }
         if(recipientsRaw.length === 0)return help.execute(message, [command])
+
+        const amountParsed = new BigNumber(amount)
+        if(amountParsed.isEqualTo(0)){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(
+                `You can't send a tip of 0 ${currencyOrRecipient}.`
+            )
+            return
+        }
 
         const recipients = []
         const errors = []
@@ -82,8 +93,6 @@ Examples:
         }
         await Promise.all(promises)
         if(recipients.length === 0)return
-
-        const amountParsed = new BigNumber(amount)
         const totalAsked = amountParsed.times(recipients.length)
 
         const [
@@ -99,6 +108,10 @@ Examples:
                 })
             }))
         ])
+
+        if(address.paused){
+            await throwFrozenAccountError(message, args, command)
+        }
 
         await viteQueue.queueAction(address.address, async () => {
             try{
@@ -118,19 +131,59 @@ Examples:
                 return
             }
             if(addresses.length > 1){
-                await bulkSend(
+                const hashes = await bulkSend(
                     address, 
                     addresses.map(e => e.address), 
                     convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
                     token
                 )
+                if(currencyOrRecipient === "VITC"){
+                    const promises = []
+                    for(const hash of hashes[1]){
+                        promises.push(Tip.create({
+                            amount: parseFloat(
+                                convert(
+                                    convert(
+                                        amountParsed, 
+                                        "VITC", 
+                                        "RAW"
+                                    ).split(".")[0], 
+                                    "RAW", 
+                                    "VITC"
+                                )
+                            ),
+                            user_id: message.author.id,
+                            date: new Date(),
+                            txhash: hash
+                        }))
+                    }
+                    await Promise.all(promises)
+                }
             }else{
-                await sendVITE(
+                const hash = await sendVITE(
                     address.seed, 
                     addresses[0].address, 
                     convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
                     token
                 )
+                if(currencyOrRecipient === "VITC"){
+                    await Tip.create({
+                        amount: parseFloat(
+                            convert(
+                                convert(
+                                    amountParsed, 
+                                    "VITC", 
+                                    "RAW"
+                                ).split(".")[0], 
+                                "RAW", 
+                                "VITC"
+                            )
+                        ),
+                        user_id: message.author.id,
+                        date: new Date(),
+                        txhash: hash
+                    })
+                }
             }
             try{
                 await message.react("873558842699571220")

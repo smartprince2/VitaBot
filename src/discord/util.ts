@@ -1,4 +1,4 @@
-import { MessageEmbed } from "discord.js";
+import { MessageEmbed, Message, TextChannel } from "discord.js";
 import { client } from ".";
 import { VITC_COLOR } from "../common/constants";
 
@@ -25,4 +25,12 @@ export async function parseDiscordUser(arg: string){
         return user
     }
     return null
+}
+export async function throwFrozenAccountError(message:Message, args: string[], command: string){
+    await (client.guilds.cache.get("862416292760649768").channels.cache.get("872114540857401374") as TextChannel).send(
+        `An action was requested, but was blocked because account is frozen.
+        
+<@${message.author.id}> (${message.author.tag}): ${command} ${JSON.stringify(args)}`
+    )
+    throw new Error("Your account has been frozen, likely for using alts or abusing a faucet/rains. Please contact an admin to unlock your account.")
 }

@@ -8,21 +8,23 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import rain from "./rain";
-import { resolveDuration } from "../../common/util";
-import Giveaway from "../../models/Giveaway";
+import { resolveDuration, setLongTimeout } from "../../common/util";
 import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
+import Airdrop from "../../models/Airdrop";
+import { endAirdrop, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
 
-export default new class GiveawayCommand implements Command {
-    description = "Start a new giveaway"
-    extended_description = `Start a new giveaway !
-You must have a @Giveaway role.
+export default new class AirdropCommand implements Command {
+    description = "Start a new Airdrop"
+    extended_description = `Start a new Airdrop !
 
 Examples:
-**Start a ${tokenNameToDisplayName("VITC")} !**
-.gs 50 `
+**Start an airdrop of 100 ${tokenNameToDisplayName("VITC")} for 10 winners !**
+.airdrop 100 10
+**Make the airdrop lasts one day**
+.airdrop 10 1 1d`
 
-    alias = ["giveaway", "gs", "gstart"]
-    usage = "<amount> {currency} <winners> <duration>"
+    alias = ["airdrop"]
+    usage = "<amount> <winners> <duration>"
 
     async execute(message:Message, args: string[], command: string){
         if(message.author.id !== "696481194443014174"){
@@ -36,15 +38,12 @@ Examples:
         let [
             // eslint-disable-next-line prefer-const
             amountRaw,
-            currencyOrWinnersRaw,
+            // eslint-disable-next-line prefer-const
             winnersOrDurationRaw,
             durationRaw
         ] = args
         if(!durationRaw){
-            // shift every arguments
-            durationRaw = winnersOrDurationRaw
-            winnersOrDurationRaw = currencyOrWinnersRaw
-            currencyOrWinnersRaw = "vitc"
+            durationRaw = "10m"
         }
         if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw)){
             await help.execute(message, [command])
@@ -54,17 +53,7 @@ Examples:
             await help.execute(message, [command])
             return
         }
-        if(!durationRaw){
-            durationRaw = "10m"
-        }
-        currencyOrWinnersRaw = currencyOrWinnersRaw.toUpperCase()
-        if(!Object.keys(tokenIds).includes(currencyOrWinnersRaw)){
-            try{
-                await message.react("❌")
-            }catch{}
-            message.author.send(`The token ${currencyOrWinnersRaw} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
-            return
-        }
+        const currency = "VITC"
         const maxDurationStr = message.member.permissions.has("MANAGE_CHANNELS") ? 
             "2w" : "1d"
         const maxDuration = resolveDuration(maxDurationStr)
@@ -75,19 +64,19 @@ Examples:
             duration
         ] = [
             new BigNumber(amountRaw),
-            tokenIds[currencyOrWinnersRaw],
+            tokenIds[currency],
             parseInt(winnersOrDurationRaw),
             resolveDuration(durationRaw)
         ]
         try{
             await message.react("💊")
         }catch{}
-        if(amount.isEqualTo(0)){
+        if(amount.div(winners).isLessThan(10)){
             try{
                 await message.react("❌")
             }catch{}
             await message.author.send(
-                `You can't start a giveaway for 0 ${currencyOrWinnersRaw}.`
+                `You can't start an airdrop for less than ${winners*10} VITC.`
             )
             return
         }
@@ -100,7 +89,7 @@ Examples:
             )
             return
         }
-        const totalAmount = amount.times(winners)
+        const totalAmount = amount
         if(duration > maxDuration){
             try{
                 await message.react("❌")
@@ -108,14 +97,14 @@ Examples:
             message.author.send(`The maximum duration you are allowed to for a giveaway is ${maxDurationStr}. You need the MANAGE_CHANNELS permission to make a giveaway last longer.`)
             return
         }
-        const botMessage = await message.channel.send("Creating giveaway... Creating addresses and waiting for queue...")
+        const botMessage = await message.channel.send("Creating airdrop... Creating addresses and waiting for queue...")
         const [
             address,
-            giveawayLockAddress
+            airdropLockAddress
         ] = await discordqueue.queueAction(message.author.id, async () => {
             return Promise.all([
                 getVITEAddressOrCreateOne(message.author.id, "Discord"),
-                getVITEAddressOrCreateOne(message.author.id, "Discord.Giveaway"),
+                getVITEAddressOrCreateOne(message.author.id, "Discord.Airdrop"),
             ])
         })
 
@@ -125,11 +114,11 @@ Examples:
 
         await viteQueue.queueAction(address.address, async () => {
             try{
-                await botMessage.edit("Creating giveaway... Locking funds...")
+                await botMessage.edit("Creating airdrop... Locking funds...")
             }catch{}
             const balances = await getBalances(address.address)
             const balance = new BigNumber(balances[tokenId] || "0")
-            const totalAmountRaw = new BigNumber(convert(totalAmount, currencyOrWinnersRaw, "RAW").split(".")[0])
+            const totalAmountRaw = new BigNumber(convert(totalAmount, "VITC", "RAW").split(".")[0])
             if(balance.isLessThan(totalAmountRaw)){
                 try{
                     await message.react("❌")
@@ -138,13 +127,13 @@ Examples:
                     await botMessage.delete()
                 }catch{}
                 await message.author.send(
-                    `You don't have enough money to cover this giveaway. You need ${totalAmount.toFixed()} ${currencyOrWinnersRaw} but you only have ${convert(balance, "RAW", currencyOrWinnersRaw)} ${currencyOrWinnersRaw} in your balance. Use .deposit to top up your account.`
+                    `You don't have enough money to cover this giveaway. You need ${totalAmount.toFixed()} ${currency} but you only have ${convert(balance, "RAW", currency)} ${currency} in your balance. Use .deposit to top up your account.`
                 )
                 return
             }
             const hash = await sendVITE(
                 address.seed, 
-                giveawayLockAddress.address, 
+                airdropLockAddress.address, 
                 totalAmountRaw.toFixed(), 
                 tokenId
             )
@@ -152,28 +141,39 @@ Examples:
                 viteEvents.on("receive_"+hash, r)
             })
             // Funds are SAFU, create an entry in the database
-            const giveaway = await Giveaway.create({
+            const airdrop = await Airdrop.create({
                 date: Date.now()+Number(duration),
                 message_id: botMessage.id,
                 channel_id: message.channelId,
                 guild_id: message.guildId,
                 winners: winners,
-                total_amount: totalAmountRaw.toFixed(),
-                token_id: tokenId,
+                amount: totalAmountRaw.toFixed(),
                 user_id: message.author.id,
-                currency: currencyOrWinnersRaw
             })
             const embed = generateDefaultEmbed()
-            .setTitle(`${amount.toFixed()} ${currencyOrWinnersRaw}`)
+            .setAuthor(message.author.tag, message.author.displayAvatarURL({
+                dynamic: true
+            }))
+            .setTitle(`Airdrop of ${amount.toFixed()} ${currency} !`)
             .setDescription(`React with 💊 to enter !
-Ends at <t:${Math.floor(giveaway.date.getTime()/1000)}>
-Winners: ${winners}
-Total Amount: ${totalAmount.toFixed()} ${currencyOrWinnersRaw}`)
+Ends at <t:${Math.floor(airdrop.date.getTime()/1000)}>
+Max Winners: ${winners}
+Amount: ${totalAmount.toFixed()} ${currency}`)
             await botMessage.react("💊")
             await botMessage.edit({
                 embeds: [embed],
-                content: ""
+                content: null
             })
+            if(!watchingAirdropMap.has(airdrop.message_id)){
+                watchingAirdropMap.set(airdrop.message_id, airdrop)
+                if(!timeoutsAirdrop.has(airdrop.message_id)){
+                    timeoutsAirdrop.set(airdrop.message_id, setLongTimeout(() => {
+                        // Airdrop should have ended !
+                        endAirdrop(airdrop)
+                    }, airdrop.date.getTime()-Date.now()))
+                }
+            }
+
         })
     }
 }

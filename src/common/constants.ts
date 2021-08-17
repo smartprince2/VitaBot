@@ -3,7 +3,10 @@ export const VITABOT_GITHUB = "https://github.com/jeanouina/VitaBot"
 export const BOT_VERSION = require("../../package.json").version
 
 export type Networks = "VITE"
-export type Platform = "Discord" | "Twitter" | "Reddit"
+export type Platform = "Discord" | "Twitter" | "Reddit" | 
+    "Discord.Giveaway" | "Twitter.Giveaway" | "Reddit.Giveaway" | 
+    "Discord.Airdrop" | "Twitter.Airdrop" | "Reddit.Airdrop" | 
+    "Faucet"
 
 export const tokenIds = {
     VITE: "tti_5649544520544f4b454e6e40",

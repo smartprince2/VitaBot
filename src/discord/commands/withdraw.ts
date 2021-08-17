@@ -4,7 +4,7 @@ import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
-import { generateDefaultEmbed } from "../util";
+import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -66,6 +66,9 @@ Examples:
         const address = await discordqueue.queueAction(message.author.id, async () => {
             return getVITEAddressOrCreateOne(message.author.id, "Discord")
         })
+        if(address.paused){
+            await throwFrozenAccountError(message, args, command)
+        }
 
         await viteQueue.queueAction(address.address, async () => {
             const balances = await getBalances(address.address)

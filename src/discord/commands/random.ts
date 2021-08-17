@@ -10,6 +10,8 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
 import rain from "./rain";
 import { randomFromArray } from "../../common/util";
+import { throwFrozenAccountError } from "../util";
+import Tip from "../../models/Tip";
 
 export default new class Random implements Command {
     description = "Tip one random person amongst active users"
@@ -55,6 +57,11 @@ Examples:
                 return getVITEAddressOrCreateOne(user, "Discord")
             })
         ])
+
+        if(address.paused){
+            await throwFrozenAccountError(message, args, command)
+        }
+
         await viteQueue.queueAction(address.address, async () => {
             try{
                 await message.react("💊")
@@ -72,12 +79,20 @@ Examples:
                 )
                 return
             }
-            await sendVITE(
+            const hash = await sendVITE(
                 address.seed,
                 recipient.address,
                 totalAskedRaw.toFixed(),
                 token
             )
+            await Tip.create({
+                amount: parseFloat(
+                    convert(totalAskedRaw, "RAW", "VITC")
+                ),
+                user_id: message.author.id,
+                date: new Date(),
+                txhash: hash
+            })
             try{
                 await message.react("873558842699571220")
             }catch{}

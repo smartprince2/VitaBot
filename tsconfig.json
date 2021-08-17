@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "resolveJsonModule": true,
-        "target": "ES2017",
+        "target": "ES2020",
         "module": "CommonJS",
         "moduleResolution": "Node",
         "rootDir": "./src",

@@ -8,6 +8,8 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
+import { throwFrozenAccountError } from "../util";
+import Tip from "../../models/Tip";
 
 export default new class Rain implements Command {
     constructor(){
@@ -18,6 +20,7 @@ export default new class Rain implements Command {
                 message.author.bot || 
                 !this.allowedGuilds.includes(message.guild.id)
             )return
+            if(/^[?.!]\w+/.test(message.content))return
 
             let hasRole = false
             const member = await message.member.fetch()
@@ -116,6 +119,11 @@ Examples:
                 })
             }))
         ])
+
+        if(address.paused){
+            await throwFrozenAccountError(message, args, command)
+        }
+
         await viteQueue.queueAction(address.address, async () => {
             try{
                 await message.react("💊")
@@ -133,12 +141,21 @@ Examples:
                 )
                 return
             }
-            await bulkSend(
+            const hashes = await bulkSend(
                 address, 
                 addresses.map(e => e.address), 
                 convert(individualAmount, "VITC", "RAW"), 
                 token
             )
+            const hash = hashes[0]
+            await Tip.create({
+                amount: parseFloat(
+                    convert(totalAskedRaw, "RAW", "VITC")
+                ),
+                user_id: message.author.id,
+                date: new Date(),
+                txhash: hash
+            })
             try{
                 await message.react("873558842699571220")
             }catch{}

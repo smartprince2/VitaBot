@@ -12,7 +12,7 @@ import PendingTransaction, { IPendingTransactions } from "../models/PendingTrans
 import { EventEmitter } from "events";
 //import PoWManager from "./PoWManager";
 
-const events = new EventEmitter()
+export const viteEvents = new EventEmitter()
 
 const skipBlocks = []
 let promisesResolveSnapshotBlocks = []
@@ -25,6 +25,14 @@ const wsService = new WS_RPC(process.env.VITE_WS, 6e5, {
     retryTimes: Infinity,
     retryInterval: 10000
 })
+const powWSService = new WS_RPC("wss://node-tokyo.vite.net/ws", 6e5, {
+    protocol: "",
+    headers: "",
+    clientConfig: "",
+    retryTimes: Infinity,
+    retryInterval: 10000
+})
+export const powWSProvider = new vite.ViteAPI(powWSService, async () => {})
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
     const SnapshotBlockEvent = await wsProvider.subscribe("createSnapshotBlockSubscription")
     SnapshotBlockEvent.on(() => {
@@ -75,7 +83,9 @@ export async function receive(address:IAddress, block:any){
                 accountBlock.setProvider(wsProvider)
                 .setPrivateKey(keyPair.privateKey)
                 await accountBlock.autoSetPreviousAccountBlock()
+                accountBlock.setProvider(powWSProvider)
                 await accountBlock.PoW()
+                accountBlock.setProvider(wsProvider)
                 await accountBlock.sign()
                 await accountBlock.send()
             }catch(err){
@@ -86,7 +96,7 @@ export async function receive(address:IAddress, block:any){
         }, 3)
     })
 
-    events.emit("receive_"+block.hash)
+    viteEvents.emit("receive_"+block.hash)
 
     // Don't send dm on random coins, for now just tell for registered coins.
     if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
@@ -106,6 +116,7 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
     })
     if(sendingAddress){
         const [id, platform] = sendingAddress.handles[0].split(".")
+        const [,,variant] = address.handles[0].split(".")
         let mention = "Unknown User"
         switch(platform){
             case "Discord": {
@@ -127,8 +138,20 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
                 }
                 break
             }
+            case "Faucet":{
+                mention = "Faucet"
+            }
         }
-        text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention} !`+text
+        switch(variant){
+            case "Giveaway": 
+                text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were locked for a giveaway.`+text
+            break
+            case "Airdrop": 
+                text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were locked for an airdrop.`+text
+            break
+            default: 
+                text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention} !`+text
+        }
     }else{
         text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance !`+text
     }
@@ -175,12 +198,16 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
 
 export async function bulkSend(from: IAddress, recipients: string[], amount: string, tokenId: string){
     const botAddress = await getVITEAddressOrCreateOne(client.user.id, "Discord")
+    if(from.paused)throw new Error("Address frozen, please contact an admin.")
     const hash = await sendVITE(from.seed, botAddress.address, new BigNumber(amount).times(recipients.length).toFixed(), tokenId)
     await new Promise(r => {
-        events.on("receive_"+hash, r)
+        viteEvents.on("receive_"+hash, r)
     })
     const transactions = await rawBulkSend(botAddress, recipients, amount, tokenId, from.handles[0])
-    return processBulkTransactions(transactions)
+    return await Promise.all([
+        Promise.resolve(hash),
+        processBulkTransactions(transactions)
+    ])
 }
 
 export async function processBulkTransactions(transactions:IPendingTransactions[]){
@@ -229,17 +256,18 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
             await accountBlock.autoSetPreviousAccountBlock()
             const quota = await wsProvider.request("contract_getQuotaByAccount", fromAddress.address)
             const availableQuota = new BigNumber(quota.currentQuota).div(21000)
-            console.log(`quota`, quota)
             if(availableQuota.isLessThan(1)){
+                accountBlock.setProvider(powWSProvider)
                 await accountBlock.PoW()
-                /*
-                const difficulty = await accountBlock.getDifficulty()
-                const threshold = (2**256/(1+1/parseInt(difficulty))).toString(16)
-                const getNonceHashBuffer = Buffer.from(accountBlock.originalAddress + accountBlock.previousHash, "hex");
-                const getNonceHash = vite.utils.blake2bHex(getNonceHashBuffer, null, 32);
-                const work = await PoWManager.computeWork(getNonceHash, threshold)
-                console.log(threshold, difficulty, work)
+                accountBlock.setProvider(wsProvider)
+                /*const difficulty = await accountBlock.getDifficulty()
                 accountBlock.setDifficulty(difficulty)
+                const threshold = (2**256/(1+1/parseInt(difficulty))).toString(16)
+                const getNonceHash = vite.utils.blake2bHex(Buffer.concat([
+                    Buffer.from(accountBlock.originalAddress, "hex"),
+                    Buffer.from(accountBlock.previousHash, "hex")
+                ]), null, 32)
+                const work = await PoWManager.computeWork(getNonceHash, threshold)
                 accountBlock.setNonce(Buffer.from(work, "hex").toString("base64"))*/
             }
             await accountBlock.sign()
