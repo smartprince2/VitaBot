@@ -3,6 +3,7 @@ import fetch from "node-fetch"
 export default new class PoWManager {
     async computeWork(hash:string, threshold:string):Promise<string>{
         try{
+            console.log(hash, threshold)
             const res = await fetch(process.env.POW_SERVER, {
                 body: JSON.stringify({
                     action: "work_generate",
@@ -14,6 +15,7 @@ export default new class PoWManager {
             })
             const body = await res.json()
             if(!("work" in body))throw new Error("Invalid response from worker.")
+            console.log(body)
             return body.work
         }catch(err){
             console.error(err)

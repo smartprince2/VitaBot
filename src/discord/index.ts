@@ -51,7 +51,10 @@ client.on("ready", () => {
 
 const prefix = process.env.DISCORD_PREFIX
 client.on("messageCreate", async message => {
-    if(message.channel.id === FAUCET_CHANNEL_ID)return
+    if(message.channel.id === FAUCET_CHANNEL_ID){
+        const isAdmin = message.member.roles.cache.has("862755971000172579") || message.member.roles.cache.has("871009109237960704")
+        if(!isAdmin)return
+    }
     if(botRegexp.test(message.content)){
         message.reply("Hi ! If you're wondering, my prefix is `"+prefix+"` ! You can see my list of commands by doing `"+prefix+"help` ! 💊")
         return

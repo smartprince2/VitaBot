@@ -31,7 +31,7 @@ Examples:
                 {
                     $group: {
                         _id: "$user_id",
-                        sum: {
+                        amount: {
                             $sum: "$amount"
                         }
                     }
@@ -44,11 +44,11 @@ Examples:
         
         let totalAmount = 0
         if(total[0]){
-            totalAmount = total[0].sum
+            totalAmount = Math.floor(total[0].amount*100)/100
         }
         let biggestAmount = 0
         if(biggest[0]){
-            biggestAmount = biggest[0].amount
+            biggestAmount = Math.floor(biggest[0].amount*100)/100
         }
         await message.reply(`You have sent **${numOfTips}** tips totalling **${totalAmount} VITC**. Your biggest tip of all time is **${biggestAmount} VITC**`)
     }

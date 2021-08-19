@@ -10,17 +10,23 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
+import ActiveStats from "../../models/ActiveStats";
+import activeQueue from "../activeQueue";
+import ActiveStatus from "../../models/ActiveStatus";
+import { durationUnits } from "../../common/util";
 
 export default new class Rain implements Command {
     constructor(){
         client.on("messageCreate", async message => {
-            if(!message.content || message.content.length < 3)return
+            const content = message.content
+            .replace(/<@!?\d+>|@(everyone|here)|<@&\d+>|<#\d+>|<a?:[\w\d_]+:\d+>/g, "")
+            if(!content || content.length > 2)return
             if(
                 !message.guild ||
                 message.author.bot || 
                 !this.allowedGuilds.includes(message.guild.id)
             )return
-            if(/^[?.!]\w+/.test(message.content))return
+            if(/^[?.!]\w+/.test(content))return
 
             let hasRole = false
             const member = await message.member.fetch()
@@ -31,38 +37,68 @@ export default new class Rain implements Command {
             }
             if(!hasRole)return
 
-            const stats = this.activeStats[message.author.id] = (this.activeStats[message.author.id]||0)+1
-            setTimeout(() => {
-                this.activeStats[message.author.id]--
-                if(!this.activeStats[message.author.id]){
-                    delete this.activeStats[message.author.id]
+            await activeQueue.queueAction(message.author.id, async () => {
+                await ActiveStats.create({
+                    user_id: message.author.id,
+                    message_id: message.id
+                })
+                const numOfActives = await ActiveStats.countDocuments({
+                    user_id: message.author.id,
+                    createdAt: {
+                        $gt: Date.now()-durationUnits.m*5
+                    }
+                })
+                if(numOfActives >= 5){
+                    const active = await ActiveStatus.findOne({
+                        user_id: message.author.id
+                    })
+                    if(active){
+                        active.createdAt = Date.now()
+                        await active.save()
+                    }else{
+                        await ActiveStatus.create({
+                            user_id: message.author.id
+                        })
+                    }
                 }
-            }, 5*60*1000);
-            if(stats >= 5){
-                if(this.activeList[message.author.id])clearTimeout(this.activeList[message.author.id])
-                this.activeList[message.author.id] = setTimeout(() => {
-                    delete this.activeList[message.author.id]
-                }, 30*60*1000);
-            }
+            })
         })
-        client.on("messageDelete", message => {
+        client.on("messageDelete", async message => {
             if(!message.content || message.content.length < 3)return
             if(
                 !message.guildId ||
                 !this.allowedGuilds.includes(message.guildId)
             )return
-            if(!this.activeStats[message.author.id])return
 
-            this.activeStats[message.author.id]--
-            if(this.activeStats[message.author.id] < 5){
-                if(this.activeList[message.author.id])clearTimeout(this.activeList[message.author.id])
-                delete this.activeList[message.author.id]
-            }
+            await activeQueue.queueAction(message.author.id, async () => {
+                const doc = await ActiveStats.findOne({
+                    message_id: message.id
+                })
+                if(!doc)return
+                await doc.delete()
+                const numOfActives = await ActiveStats.countDocuments({
+                    user_id: message.author.id
+                })
+                if(numOfActives < 5){
+                    const active = await ActiveStatus.findOne({
+                        user_id: message.author.id
+                    })
+                    if(active){
+                        await active.delete()
+                    }
+                }
+            })
         })
     }
 
-    activeStats = {}
-    activeList = {}
+    async getActiveUsers():Promise<string[]>{
+        const users = await ActiveStatus.find({
+            createdAt: {
+                $gt: Date.now()-durationUnits.m*30
+            }
+        })
+        return users.map(e => e.user_id)
+    }
 
     description = "Tip active users"
     extended_description = `Tip active users. 
@@ -94,7 +130,7 @@ Examples:
             await message.reply("The minimum amount to rain is 100 VITC.")
             return
         }
-        const userList = Object.keys(this.activeList)
+        const userList = (await this.getActiveUsers())
             .filter(e => e !== message.author.id)
         if(userList.length < 2){
             await message.reply(`There are less than 2 active users. Cannot rain. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")}`)

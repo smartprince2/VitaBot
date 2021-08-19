@@ -10,7 +10,7 @@ import { retryAsync, wait } from "../common/util";
 import BigNumber from "bignumber.js";
 import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction";
 import { EventEmitter } from "events";
-//import PoWManager from "./PoWManager";
+import PoWManager from "./PoWManager";
 
 export const viteEvents = new EventEmitter()
 
@@ -83,9 +83,22 @@ export async function receive(address:IAddress, block:any){
                 accountBlock.setProvider(wsProvider)
                 .setPrivateKey(keyPair.privateKey)
                 await accountBlock.autoSetPreviousAccountBlock()
-                //accountBlock.setProvider(powWSProvider)
-                await accountBlock.PoW()
-                accountBlock.setProvider(wsProvider)
+                const quota = await wsProvider.request("contract_getQuotaByAccount", address.address)
+                const availableQuota = new BigNumber(quota.currentQuota).div(21000)
+                if(availableQuota.isLessThan(1)){
+                    //accountBlock.setProvider(powWSProvider)
+                    await accountBlock.PoW()
+                    accountBlock.setProvider(wsProvider)
+                    /*const difficulty = await accountBlock.getDifficulty()
+                    accountBlock.setDifficulty(difficulty)
+                    const threshold = (2**256/(1+1/parseInt(difficulty))).toString(16)
+                    const getNonceHash = vite.utils.blake2bHex(Buffer.concat([
+                        Buffer.from(accountBlock.originalAddress, "hex"),
+                        Buffer.from(accountBlock.previousHash, "hex")
+                    ]), null, 32)
+                    const work = await PoWManager.computeWork(getNonceHash, threshold)
+                    accountBlock.setNonce(Buffer.from(work, "hex").toString("base64"))*/
+                }
                 await accountBlock.sign()
                 await accountBlock.send()
             }catch(err){

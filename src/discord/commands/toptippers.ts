@@ -26,7 +26,6 @@ Examples:
             }
         ])
         const topTipps = topTippers
-        .filter(e => e._id !== "112006418676113408")
         .sort((a, b) => b.sum-a.sum)
         .slice(0, 15)
         

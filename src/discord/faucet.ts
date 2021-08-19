@@ -31,8 +31,9 @@ export async function initFaucet(){
                 })
                 if(cooldown){
                     if(Date.now() < cooldown.date.getTime() + durationUnits.d){
+                        const timestamp = Math.floor((cooldown.date.getTime()+durationUnits.d)/1000)
                         await message.author.send(
-                            `Please wait until <t:${Math.floor((cooldown.date.getTime()+durationUnits.d)/1000)}> before posting again in <#${FAUCET_CHANNEL_ID}>.`
+                            `You will be able to post <t:${timestamp}:R>. Please wait until <t:${timestamp}> before posting again in <#${FAUCET_CHANNEL_ID}>.`
                         )
                         throw new Error()
                     }else{
