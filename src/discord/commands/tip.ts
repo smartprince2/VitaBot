@@ -71,28 +71,32 @@ Examples:
         }
 
         const recipients = []
-        const errors = []
         const promises = []
         for(const recipient of recipientsRaw){
             promises.push((async () => {
                 try{
-                    const user = await parseDiscordUser(recipient)
-                    // couldn't find it
-                    if(!user)throw new Error()
-                    // bot
-                    if(user.bot)throw new Error()
-                    // same person sending to itself
-                    if(user.id === message.author.id)return
-                    // User already resolved, double pinging.
-                    if(recipients.find(e => e.id === user.id))return
-                    recipients.push(user)
-                }catch(err){
-                    errors.push(recipient)
-                }
+                    const users = await parseDiscordUser(recipient)
+                    for(const user of users){
+                        // couldn't find it
+                        if(!user)continue
+                        // bot
+                        if(user.bot)continue
+                        // same person sending to itself
+                        if(user.id === message.author.id)continue
+                        // User already resolved, double pinging.
+                        if(recipients.find(e => e.id === user.id))continue
+                        recipients.push(user)
+                    }
+                }catch{}
             })())
         }
         await Promise.all(promises)
-        if(recipients.length === 0)return
+        if(recipients.length === 0){
+            try{
+                await message.react("❌")
+            }catch{}
+            return
+        }
         const totalAsked = amountParsed.times(recipients.length)
 
         const [

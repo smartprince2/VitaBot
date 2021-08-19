@@ -16,7 +16,7 @@ export default new class BlacklistCommand implements Command {
         if(!message.member.roles.cache.has("862755971000172579") && !message.member.roles.cache.has("871009109237960704"))return
         
         const id = args[0]
-        const user = id && await parseDiscordUser(id)
+        const user = id && (await parseDiscordUser(id))[0]
         if(!user){
             await message.reply("Please add the id of an user.")
             return

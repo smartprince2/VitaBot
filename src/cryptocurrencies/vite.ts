@@ -133,14 +133,14 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
         let mention = "Unknown User"
         switch(platform){
             case "Discord": {
-                let user = await parseDiscordUser(id)
+                let user = (await parseDiscordUser(id))[0]
                 if(user.id === client.user.id){
                     //let's try to resolve the original id
                     const sender = hashToSender[block.hash]
                     if(sender){
                         delete hashToSender[block.hash]
                         const id = sender.split(".")[0]
-                        const tempUser = await parseDiscordUser(id)
+                        const tempUser = (await parseDiscordUser(id))[0]
                         if(tempUser){
                             user = tempUser
                         }

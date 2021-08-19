@@ -19,10 +19,10 @@ export async function parseDiscordUser(arg: string){
     if(USER_PATTERN.test(arg)){
         const parsed = arg.match(USER_PATTERN)
         const user = await client.users.fetch(parsed.groups.id)
-        return user
+        return [user]
     }else if(ID_PATTERN.test(arg)){
         const user = await client.users.fetch(arg)
-        return user
+        return [user]
     }
     return null
 }

@@ -33,7 +33,7 @@ Examples:
             topTipps.map(async e => {
                 return {
                     amount: e.sum,
-                    user: await parseDiscordUser(e._id)
+                    user: (await parseDiscordUser(e._id))[0]
                 }
             })
         )
