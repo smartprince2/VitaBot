@@ -25,6 +25,7 @@ Examples:
 
     alias = ["airdrop"]
     usage = "<amount> <winners> <duration>"
+    hidden = true
 
     async execute(message:Message, args: string[], command: string){
         if(message.author.id !== "696481194443014174"){
@@ -118,7 +119,7 @@ Examples:
             }catch{}
             const balances = await getBalances(address.address)
             const balance = new BigNumber(balances[tokenId] || "0")
-            const totalAmountRaw = new BigNumber(convert(totalAmount, "VITC", "RAW").split(".")[0])
+            const totalAmountRaw = new BigNumber(convert(totalAmount, currency, "RAW").split(".")[0])
             if(balance.isLessThan(totalAmountRaw)){
                 try{
                     await message.react("❌")
@@ -127,7 +128,7 @@ Examples:
                     await botMessage.delete()
                 }catch{}
                 await message.author.send(
-                    `You don't have enough money to cover this giveaway. You need ${totalAmount.toFixed()} ${currency} but you only have ${convert(balance, "RAW", currency)} ${currency} in your balance. Use .deposit to top up your account.`
+                    `You don't have enough money to cover this airdrop. You need ${totalAmount.toFixed()} ${currency} but you only have ${convert(balance, "RAW", currency)} ${currency} in your balance. Use .deposit to top up your account.`
                 )
                 return
             }

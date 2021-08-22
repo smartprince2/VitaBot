@@ -14,13 +14,14 @@ import ActiveStats from "../../models/ActiveStats";
 import activeQueue from "../activeQueue";
 import ActiveStatus from "../../models/ActiveStatus";
 import { durationUnits } from "../../common/util";
+import toptippers from "./toptippers";
 
 export default new class Rain implements Command {
     constructor(){
         client.on("messageCreate", async message => {
             const content = message.content
             .replace(/<@!?\d+>|@(everyone|here)|<@&\d+>|<#\d+>|<a?:[\w\d_]+:\d+>/g, "")
-            if(!content || content.length > 2)return
+            if(!content || content.length < 2)return
             if(
                 !message.guild ||
                 message.author.bot || 
@@ -40,12 +41,13 @@ export default new class Rain implements Command {
             await activeQueue.queueAction(message.author.id, async () => {
                 await ActiveStats.create({
                     user_id: message.author.id,
-                    message_id: message.id
+                    message_id: message.id,
+                    createdAt: new Date()
                 })
                 const numOfActives = await ActiveStats.countDocuments({
                     user_id: message.author.id,
                     createdAt: {
-                        $gt: Date.now()-durationUnits.m*5
+                        $gt: new Date(Date.now()-durationUnits.m*5)
                     }
                 })
                 if(numOfActives >= 5){
@@ -53,11 +55,12 @@ export default new class Rain implements Command {
                         user_id: message.author.id
                     })
                     if(active){
-                        active.createdAt = Date.now()
+                        active.createdAt = new Date()
                         await active.save()
                     }else{
                         await ActiveStatus.create({
-                            user_id: message.author.id
+                            user_id: message.author.id,
+                            createdAt: new Date()
                         })
                     }
                 }
@@ -94,10 +97,11 @@ export default new class Rain implements Command {
     async getActiveUsers():Promise<string[]>{
         const users = await ActiveStatus.find({
             createdAt: {
-                $gt: Date.now()-durationUnits.m*30
+                $gt: new Date(Date.now()-durationUnits.m*30)
             }
         })
         return users.map(e => e.user_id)
+        .filter(e => !toptippers.admins.includes(e))
     }
 
     description = "Tip active users"

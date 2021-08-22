@@ -61,7 +61,10 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
     // wait for db before launching bo
     
     await dbPromise
-
+    return
+    // I got in a fucking infinite look of disconnection
+    // TODO: Implement a delay between connections, 
+    // because rate limits are going fuck you up
     listenForever(
         () => clientv2.stream("tweets/search/stream"),
         async (data) => {

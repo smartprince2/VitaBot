@@ -10,7 +10,6 @@ import { retryAsync, wait } from "../common/util";
 import BigNumber from "bignumber.js";
 import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction";
 import { EventEmitter } from "events";
-import PoWManager from "./PoWManager";
 
 export const viteEvents = new EventEmitter()
 
@@ -103,7 +102,6 @@ export async function receive(address:IAddress, block:any){
                 await accountBlock.send()
             }catch(err){
                 if(tries !== 2)await wait(20000)
-                console.log(address)
                 throw err
             }
         }, 3)

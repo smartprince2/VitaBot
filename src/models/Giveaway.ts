@@ -1,21 +1,26 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IGiveaway extends Document {
-    date: Date,
+    duration: number,
+    creation_date: Date,
+    bot_message_id?: string,
     message_id: string,
     channel_id: string,
     guild_id: string,
-    winners: number,
-    total_amount: string,
-    token_id: string,
-    user_id: string,
-    currency: string
+    user_id: string
 }
 
 const GiveawaySchema = new Schema<IGiveaway>({
-    date: {
+    duration: {
+        type: Number,
+        required: true
+    },
+    creation_date: {
         required: true,
         type: Date
+    },
+    bot_message_id: {
+        type: String
     },
     message_id: {
         type: String,
@@ -30,23 +35,7 @@ const GiveawaySchema = new Schema<IGiveaway>({
         type: String,
         required: true
     },
-    winners: {
-        type: Number,
-        required: true
-    },
-    total_amount: {
-        type: String,
-        required: true
-    },
-    token_id: {
-        type: String,
-        required: true
-    },
     user_id: {
-        type: String,
-        required: true
-    },
-    currency: {
         type: String,
         required: true
     }

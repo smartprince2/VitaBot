@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from "mongoose";
 export interface IActiveStats extends Document {
     user_id: string,
     message_id: string,
-    createdAt: number
+    createdAt: Date
 }
 
 const ActiveSchema = new Schema<IActiveStats>({
@@ -17,8 +17,8 @@ const ActiveSchema = new Schema<IActiveStats>({
         unique: true
     },
     createdAt: {
-        type: Number, 
-        default: () => Date.now()
+        type: Date, 
+        expires: 60*5
     }
 })
 

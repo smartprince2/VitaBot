@@ -9,6 +9,9 @@ import { dbPromise } from "../common/load-db"
 import { FAUCET_CHANNEL_ID, initFaucet } from "./faucet"
 import { searchAirdrops } from "./AirdropManager"
 import { durationUnits } from "../common/util"
+import viteQueue from "../cryptocurrencies/viteQueue"
+import * as vite from "@vite/vitejs";
+import { getVITEAddressOrCreateOne, wsProvider } from "../cryptocurrencies/vite"
 
 export const client = new Discord.Client({
     allowedMentions: {
@@ -32,7 +35,7 @@ export const commands = new Collection<string, Command>()
 export const rawCommands = [] as Command[]
 let botRegexp:RegExp = null
 
-client.on("ready", () => {
+client.on("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`)
     client.user.setActivity({
         name: "Popping pills 💊",
@@ -76,7 +79,7 @@ client.on("messageCreate", async message => {
             err = JSON.stringify(err.error, null, "    ")
         }
         message.channel.send({
-            content: `The command ${command} throwed an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
+            content: `The command ${command} threw an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
             embeds: [
                 generateDefaultEmbed()
                 .setDescription("```"+err+"```")

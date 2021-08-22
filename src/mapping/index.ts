@@ -36,6 +36,13 @@ dbPromise.then(async () => {
                             tag: user.tag
                         })
                     }catch{}
+                    break
+                }
+                case "Faucet": {
+                    handles.push({
+                        platform: "Faucet",
+                        tag: id
+                    })
                 }
             }
         }

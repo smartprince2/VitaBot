@@ -2,7 +2,7 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IActiveStatus extends Document {
     user_id: string,
-    createdAt: number
+    createdAt: Date
 }
 
 const ActiveStatusSchema = new Schema<IActiveStatus>({
@@ -11,8 +11,8 @@ const ActiveStatusSchema = new Schema<IActiveStatus>({
         required: true
     },
     createdAt: {
-        type: Number,
-        default: () => Date.now()
+        type: Date,
+        expires: 60*30
     }
 })
 
