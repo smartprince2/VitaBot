@@ -33,7 +33,7 @@ export default new class Balance implements Command {
             embeds: [embed]
         })
         if(message.guild){
-            message.reply("I've sent your balance in your DM !")
+            message.reply("I've sent your balance in your DM!")
         }
     }
 }

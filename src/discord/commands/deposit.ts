@@ -7,7 +7,7 @@ import * as qrcode from "qrcode"
 
 export default new class Deposit implements Command {
     description = "Get your deposit address"
-    extended_description = "Retrieve your deposit address. VitaBot accepts tipping with a lot of tokens, and allows storing every token on the VITE blockchain !"
+    extended_description = "Retrieve your deposit address."
     alias = ["deposit"]
     usage = ""
 
@@ -34,7 +34,7 @@ export default new class Deposit implements Command {
             }]
         })
         if(message.guild){
-            await message.channel.send("I've sent your deposit address in your DM !")
+            await message.channel.send("I've sent your deposit address in your DM!")
         }
     }
 }

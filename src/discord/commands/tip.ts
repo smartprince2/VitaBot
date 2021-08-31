@@ -54,7 +54,7 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            message.author.send(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
+            await message.author.send(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
             return
         }
         if(recipientsRaw.length === 0)return help.execute(message, [command])

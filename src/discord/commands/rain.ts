@@ -30,7 +30,8 @@ export default new class Rain implements Command {
             if(/^[?.!]\w+/.test(content))return
 
             let hasRole = false
-            const member = await message.member.fetch()
+            const member = await message.member.fetch().catch(e => null)
+            if(!member)return
             for(const role of this.allowedRoles){
                 if(!member.roles.cache.has(role))continue
                 hasRole = true
@@ -42,7 +43,8 @@ export default new class Rain implements Command {
                 await ActiveStats.create({
                     user_id: message.author.id,
                     message_id: message.id,
-                    createdAt: new Date()
+                    createdAt: new Date(),
+                    num: 1
                 })
                 const numOfActives = await ActiveStats.countDocuments({
                     user_id: message.author.id,
@@ -121,7 +123,9 @@ Examples:
 
     async execute(message:Message, args: string[], command: string){
         if(!message.guild || !this.allowedGuilds.includes(message.guild.id)){
-            await message.reply(`The \`${command}\` is not enabled in this server. Please contact the bot's operator`)
+            try{
+                await message.react("❌")
+            }catch{}
             return
         }
         const amountRaw = args[0]
@@ -170,7 +174,7 @@ Examples:
             }catch{}
             const balances = await getBalances(address.address)
             const token = tokenIds.VITC
-            const balance = new BigNumber(balances[token])
+            const balance = new BigNumber(balances[token] || 0)
             const totalAskedRaw = new BigNumber(convert(totalAsked, "VITC", "RAW"))
             if(balance.isLessThan(totalAskedRaw)){
                 try{
@@ -200,7 +204,7 @@ Examples:
                 await message.react("873558842699571220")
             }catch{}
             try{
-                await message.reply(`Distributed ${convert(totalAskedRaw, "RAW", "VITC")} VITC amongst ${userList.length} active members !`)
+                await message.reply(`Distributed ${convert(totalAskedRaw, "RAW", "VITC")} VITC amongst ${userList.length} active members!`)
             }catch{}
         })
     }

@@ -73,7 +73,7 @@ ${process.env.DISCORD_PREFIX}help deposit`
             embeds: [embed]
         })
         if(message.guild){
-            await message.reply("I've sent the help menu in your DM !")
+            await message.reply("I've sent the help menu in your DM!")
         }
     }
 }

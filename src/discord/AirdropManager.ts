@@ -1,6 +1,6 @@
 import { client } from "."
 import { tokenIds } from "../common/constants"
-import { setLongTimeout } from "../common/util"
+import * as lt from "long-timeout"
 import { bulkSend, getVITEAddressOrCreateOne, sendVITE } from "../cryptocurrencies/vite"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import Airdrop, { IAirdrop } from "../models/Airdrop"
@@ -10,7 +10,7 @@ import { convert } from "../common/convert"
 import BigNumber from "bignumber.js"
 
 export const watchingAirdropMap = new Map<string, IAirdrop>()
-export const timeoutsAirdrop = new Map<string, number>()
+export const timeoutsAirdrop = new Map<string, lt.Timeout>()
 
 export async function searchAirdrops(){
     const airdrops = await Airdrop.find({})
@@ -18,8 +18,8 @@ export async function searchAirdrops(){
         if(watchingAirdropMap.has(airdrop.message_id))continue
         watchingAirdropMap.set(airdrop.message_id, airdrop)
         if(!timeoutsAirdrop.has(airdrop.message_id)){
-            timeoutsAirdrop.set(airdrop.message_id, setLongTimeout(() => {
-                // Airdrop should have ended !
+            timeoutsAirdrop.set(airdrop.message_id, lt.setTimeout(() => {
+                // Airdrop should have ended!
                 endAirdrop(airdrop)
             }, airdrop.date.getTime()-Date.now()))
         }
@@ -51,7 +51,7 @@ export async function endAirdrop(airdrop:IAirdrop){
             validUsers.push(user)
         }
         if(validUsers.length === 0){
-            embed.setDescription(`Airdrop Ended !
+            embed.setDescription(`Airdrop Ended!
 Ended at <t:${Math.floor(airdrop.date.getTime()/1000)}>
 Winners: 0
 Amount: ${convert(airdrop.amount, "RAW", "VITC")} VITC`)
@@ -78,7 +78,7 @@ Amount: ${convert(airdrop.amount, "RAW", "VITC")} VITC`)
                 return getVITEAddressOrCreateOne(user.id, "Discord")
             })
         }))
-        embed.setDescription(`Airdrop Ended !
+        embed.setDescription(`Airdrop Ended!
 Ended at <t:${Math.floor(airdrop.date.getTime()/1000)}>
 Winners: ${validUsers.length}
 Amount: ${convert(airdrop.amount, "RAW", "VITC")} VITC
@@ -98,11 +98,11 @@ Currently: distributing rewards. Please wait...`)
         }catch(err){
             console.error(err)
         }
-        embed.setDescription(`Airdrop Ended !
+        embed.setDescription(`Airdrop Ended!
 Ended at <t:${Math.floor(airdrop.date.getTime()/1000)}>
 Winners: ${validUsers.length}
 Amount: ${convert(airdrop.amount, "RAW", "VITC")} VITC
-Currently: All rewards have been distributed !`)
+Currently: All rewards have been distributed!`)
         await message.edit({
             embeds: [embed]
         })

@@ -12,6 +12,7 @@ import { durationUnits } from "../common/util"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import * as vite from "@vite/vitejs";
 import { getVITEAddressOrCreateOne, wsProvider } from "../cryptocurrencies/vite"
+import { searchGiveaways } from "./GiveawayManager"
 
 export const client = new Discord.Client({
     allowedMentions: {
@@ -48,6 +49,9 @@ client.on("ready", async () => {
     
     searchAirdrops()
     .catch(()=>{})
+
+    searchGiveaways()
+    .catch(console.error)
     // every hour
     setTimeout(searchAirdrops, durationUnits.h)
 })
@@ -59,7 +63,7 @@ client.on("messageCreate", async message => {
         if(!isAdmin)return
     }
     if(botRegexp.test(message.content)){
-        message.reply("Hi ! If you're wondering, my prefix is `"+prefix+"` ! You can see my list of commands by doing `"+prefix+"help` ! 💊")
+        message.reply("Hi! If you're wondering, my prefix is `"+prefix+"`! You can see my list of commands by doing `"+prefix+"help`! 💊")
         return
     }
     if(!message.content.startsWith(prefix))return
@@ -79,7 +83,7 @@ client.on("messageCreate", async message => {
             err = JSON.stringify(err.error, null, "    ")
         }
         message.channel.send({
-            content: `The command ${command} threw an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
+            content: `The command ${command} threw an error! Sorry for the inconvenience! Please report this to VitaBot's github:`,
             embeds: [
                 generateDefaultEmbed()
                 .setDescription("```"+err+"```")

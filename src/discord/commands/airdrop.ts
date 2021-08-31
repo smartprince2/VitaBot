@@ -8,17 +8,18 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import rain from "./rain";
-import { resolveDuration, setLongTimeout } from "../../common/util";
+import * as lt from "long-timeout"
+import { resolveDuration } from "../../common/util";
 import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import Airdrop from "../../models/Airdrop";
 import { endAirdrop, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
 
 export default new class AirdropCommand implements Command {
     description = "Start a new Airdrop"
-    extended_description = `Start a new Airdrop !
+    extended_description = `Start a new Airdrop!
 
 Examples:
-**Start an airdrop of 100 ${tokenNameToDisplayName("VITC")} for 10 winners !**
+**Start an airdrop of 100 ${tokenNameToDisplayName("VITC")} for 10 winners!**
 .airdrop 100 10
 **Make the airdrop lasts one day**
 .airdrop 10 1 1d`
@@ -33,7 +34,9 @@ Examples:
             return
         }
         if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
-            await message.reply(`The \`${command}\` is not enabled in this server. Please contact the bot's operator`)
+            try{
+                await message.react("❌")
+            }catch{}
             return
         }
         let [
@@ -139,7 +142,7 @@ Examples:
                 tokenId
             )
             await new Promise(r => {
-                viteEvents.on("receive_"+hash, r)
+                viteEvents.once("receive_"+hash, r)
             })
             // Funds are SAFU, create an entry in the database
             const airdrop = await Airdrop.create({
@@ -155,8 +158,8 @@ Examples:
             .setAuthor(message.author.tag, message.author.displayAvatarURL({
                 dynamic: true
             }))
-            .setTitle(`Airdrop of ${amount.toFixed()} ${currency} !`)
-            .setDescription(`React with 💊 to enter !
+            .setTitle(`Airdrop of ${amount.toFixed()} ${currency}!`)
+            .setDescription(`React with 💊 to enter!
 Ends at <t:${Math.floor(airdrop.date.getTime()/1000)}>
 Max Winners: ${winners}
 Amount: ${totalAmount.toFixed()} ${currency}`)
@@ -168,8 +171,8 @@ Amount: ${totalAmount.toFixed()} ${currency}`)
             if(!watchingAirdropMap.has(airdrop.message_id)){
                 watchingAirdropMap.set(airdrop.message_id, airdrop)
                 if(!timeoutsAirdrop.has(airdrop.message_id)){
-                    timeoutsAirdrop.set(airdrop.message_id, setLongTimeout(() => {
-                        // Airdrop should have ended !
+                    timeoutsAirdrop.set(airdrop.message_id, lt.setTimeout(() => {
+                        // Airdrop should have ended!
                         endAirdrop(airdrop)
                     }, airdrop.date.getTime()-Date.now()))
                 }

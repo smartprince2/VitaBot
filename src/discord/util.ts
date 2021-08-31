@@ -18,13 +18,21 @@ export function isDiscordUserArgument(arg: string){
 export async function parseDiscordUser(arg: string){
     if(USER_PATTERN.test(arg)){
         const parsed = arg.match(USER_PATTERN)
-        const user = await client.users.fetch(parsed.groups.id)
-        return [user]
+        try{
+            const user = await client.users.fetch(parsed.groups.id)
+            return [user]
+        }catch{
+            return []
+        }
     }else if(ID_PATTERN.test(arg)){
-        const user = await client.users.fetch(arg)
-        return [user]
+        try{
+            const user = await client.users.fetch(arg)
+            return [user]
+        }catch{
+            return []
+        }
     }
-    return null
+    return []
 }
 export async function throwFrozenAccountError(message:Message, args: string[], command: string){
     await (client.guilds.cache.get("862416292760649768").channels.cache.get("872114540857401374") as TextChannel).send(

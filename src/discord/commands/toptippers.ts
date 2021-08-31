@@ -1,11 +1,13 @@
 import { Message } from "discord.js";
-import { client } from "..";
 import Tip from "../../models/Tip";
 import Command from "../command";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 
 export default new class Toptippers implements Command {
     admins: string[] = [
+        // VitaBot
+        "872912021379752026",
+
         // 1appleaday
         "862414189464256542",
         // Kript
@@ -34,10 +36,12 @@ export default new class Toptippers implements Command {
         "861182006502359080",
         // VitaMachine
         "553060199510966293",
-        // WhiteFlag
-        "533663361770979369",
+        // Supreme Chancellor Palpatine
+        "356791504318234625",
         // YaroslavaWise
-        "398394098127732738"
+        "398394098127732738",
+        // TARZAN | WatchDog | IND
+        "709877129134997544"
     ]
 
     description = "See the bot's top tippers"

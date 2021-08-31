@@ -30,20 +30,20 @@ export async function initFaucet(){
                     user_id: message.author.id
                 })
                 if(cooldown){
-                    if(Date.now() < cooldown.date.getTime() + durationUnits.d){
+                    if(message.createdAt.getTime() < cooldown.date.getTime() + durationUnits.d){
                         const timestamp = Math.floor((cooldown.date.getTime()+durationUnits.d)/1000)
                         await message.author.send(
                             `You will be able to post <t:${timestamp}:R>. Please wait until <t:${timestamp}> before posting again in <#${FAUCET_CHANNEL_ID}>.`
                         )
                         throw new Error()
                     }else{
-                        cooldown.date = new Date()
+                        cooldown.date = message.createdAt
                         await cooldown.save()
                     }
                 }else{
                     cooldown = await FaucetCooldown.create({
                         user_id: message.author.id,
-                        date: new Date()
+                        date: message.createdAt
                     })
                 }
             })
@@ -90,7 +90,7 @@ export async function initFaucet(){
                 err = JSON.stringify(err.error, null, "    ")
             }
             message.channel.send({
-                content: `The faucet throwed an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
+                content: `The faucet throwed an error! Sorry for the inconvenience! Please report this to VitaBot's github:`,
                 embeds: [
                     generateDefaultEmbed()
                     .setDescription("```"+err+"```")

@@ -7,7 +7,7 @@ import help from "./help";
 
 export default new class DoAs implements Command {
     description = "Do as someone else"
-    extended_description = `Have a stuck transaction in someone else's acc and that person is offline, or just doesn't understand ? just use doas.`
+    extended_description = `Have a stuck transaction in someone else's acc and that person is offline, or just doesn't understand? just use doas.`
     alias = ["doas"]
     usage = "<command> <mention> {...args}"
     hidden = true
@@ -27,10 +27,12 @@ export default new class DoAs implements Command {
 
         const user = await parseDiscordUser(mention)
         if(!user[0]){
-            await help.execute(message, [doas])
-            return
+            message.author.id = mention
+            //await help.execute(message, [doas])
+            //return
+        }else{
+            message.author = user[0]
         }
-        message.author = user[0]
 
         const cmd = commands.get(command)
         if(!cmd){
@@ -47,7 +49,7 @@ export default new class DoAs implements Command {
                 err = JSON.stringify(err.error, null, "    ")
             }
             message.channel.send({
-                content: `The command ${command} threw an error ! Sorry for the inconvenience ! Please report this to VitaBot's github:`,
+                content: `The command ${command} threw an error! Sorry for the inconvenience! Please report this to VitaBot's github:`,
                 embeds: [
                     generateDefaultEmbed()
                     .setDescription("```"+err+"```")

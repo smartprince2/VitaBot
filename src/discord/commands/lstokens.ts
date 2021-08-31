@@ -21,7 +21,7 @@ If you think we missed something, please contact us (DM <@696481194443014174> or
             embeds: [embed]
         })
         if(message.guild){
-            await message.reply("I've sent a list of supported tokens in your DM !")
+            await message.reply("I've sent a list of supported tokens in your DM!")
         }
     }
 }

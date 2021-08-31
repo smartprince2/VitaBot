@@ -1,7 +1,7 @@
 {
   "name": "vitabot",
   "version": "1.0.0",
-  "description": "Tipbots for Vitamin Coin on the vitex blockchain !",
+  "description": "Tipbots for Vitamin Coin on the vite blockchain!",
   "main": "dist/all/index.js",
   "scripts": {
     "test": "npm run build && npm start",
@@ -32,6 +32,8 @@
   "homepage": "https://github.com/JeanOUINA/vitc-tipbots#readme",
   "private": true,
   "devDependencies": {
+    "@types/express": "^4.17.13",
+    "@types/long-timeout": "^0.1.0",
     "@types/node": "^16.4.12",
     "@types/node-fetch": "^2.5.12",
     "@types/qrcode": "^1.4.1",
@@ -49,10 +51,13 @@
     "bignumber.js": "^9.0.1",
     "discord.js": "13",
     "dotenv": "^10.0.0",
+    "express": "^4.17.1",
+    "long-timeout": "^0.1.1",
     "modernlog": "^1.0.1",
     "mongoose": "^5.13.5",
     "node-fetch": "^2.6.1",
     "qrcode": "^1.4.4",
+    "tiny-async-pool": "^1.2.0",
     "twitter": "^1.7.1",
     "twitter-v2": "^1.1.0"
   },

@@ -19,7 +19,7 @@ export default new class Random implements Command {
 If they don't have an account on the tipbot, it will create one for them.
 
 Examples:
-**Tip to one random person 50 ${tokenNameToDisplayName("VITC")} !**
+**Tip to one random person 50 ${tokenNameToDisplayName("VITC")}!**
 .vrandom 50`
 
     alias = ["vr", "vrandom", "random"]
@@ -30,7 +30,9 @@ Examples:
 
     async execute(message:Message, args: string[], command: string){
         if(!message.guild || !this.allowedGuilds.includes(message.guild.id)){
-            await message.reply(`The \`${command}\` is not enabled in this server. Please contact the bot's operator`)
+            try{
+                await message.react("❌")
+            }catch{}
             return
         }
         const amountRaw = args[0]
@@ -39,6 +41,18 @@ Examples:
             return
         }
         const amount = new BigNumber(amountRaw)
+        if(amount.isLessThan(10)){
+            try{
+                await message.react("💊")
+            }catch{}
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(
+                `The base amount for that random tip is too low. You need to tip at least 10 VITC.`
+            )
+            return
+        }
         const userList = (await rain.getActiveUsers())
             .filter(e => e !== message.author.id)
         if(userList.length < 2){
@@ -99,7 +113,7 @@ Examples:
             try{
                 const u = await client.users.fetch(user)
                 await message.author.send({
-                    content: `Tipped ${convert(totalAskedRaw, "RAW", "VITC")} VITC to ${u.tag} !`,
+                    content: `Tipped ${convert(totalAskedRaw, "RAW", "VITC")} VITC to ${u.tag}!`,
                     allowedMentions: {
                         users: [user]
                     }

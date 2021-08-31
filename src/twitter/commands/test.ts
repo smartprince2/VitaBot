@@ -12,7 +12,7 @@ export default new class Test implements Command {
     async execute(data:Tweet){
         console.log(data)
         await clientv1.post("statuses/update", {
-            status: `Hello, everything works !`,
+            status: `Hello, everything works!`,
             in_reply_to_status_id: data.id
         })
     }

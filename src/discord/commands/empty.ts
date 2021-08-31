@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
-import { convert, tokenNameToDisplayName } from "../../common/convert";
+import { convert } from "../../common/convert";
 import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
@@ -9,29 +9,18 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import * as vite from "@vite/vitejs"
+import Address from "../../models/Address";
 
-export default new class Tip implements Command {
-    description = "Withdraw the funds on the tipbot"
-    extended_description = `Withdraw your money to a personnal wallet.
+export default new class EmptyCommand implements Command {
+    description = "Withdraw the funds on the tipbot from a stuck address"
+    extended_description = ``
 
-Examples:
-**Withdraw all your ${tokenNameToDisplayName("VITC")} to your wallet**
-.withdraw all vite_addr
-**Withdraw 1 ${tokenNameToDisplayName("VITC")} to your wallet**
-.Withdraw 1 vite_addr
-**Withdraw all your ${tokenNameToDisplayName("BAN")} to your wallet**
-.withdraw all BAN vite_addr
-**Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet**
-.Withdraw 1 BAN vite_addr`
-
-    alias = ["withdraw", "send"]
-    usage = "<amount|all> {currency} <vite_addr>"
+    alias = ["empty"]
+    usage = "<amount|all> {currency} <address>"
+    hidden = true
 
     async execute(message:Message, args: string[], command: string){
-        if(message.guild){
-            await message.reply("Please execute this command in DMs")
-            return
-        }
+        if(message.author.id !== "696481194443014174")return
         let [
             // eslint-disable-next-line prefer-const
             amountRaw,
@@ -63,9 +52,21 @@ Examples:
         }
         if(!addr)return help.execute(message, [command])
 
-        const address = await discordqueue.queueAction(message.author.id, async () => {
-            return getVITEAddressOrCreateOne(message.author.id, "Discord")
-        })
+        const [
+            address,
+            recipient
+        ] = await Promise.all([
+            Address.findOne({
+                address: addr
+            }),
+            discordqueue.queueAction(message.author.id, async () => {
+                return getVITEAddressOrCreateOne(message.author.id, "Discord")
+            })
+        ])
+        if(!address){
+            await message.reply("This address isn't managed by the tipbot.")
+            return
+        }
         if(address.paused){
             await throwFrozenAccountError(message, args, command)
         }
@@ -83,7 +84,7 @@ Examples:
                     await message.react("❌")
                 }catch{}
                 await message.author.send({
-                    content: `You don't have enough money to cover this withdraw. You need ${convert(amount, "RAW", currencyOrRecipient)} ${currencyOrRecipient} but you only have ${convert(balance, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in your balance.`,
+                    content: `The address doesn't have enough money to cover this empty. It needs ${convert(amount, "RAW", currencyOrRecipient)} ${currencyOrRecipient} but it only has ${convert(balance, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in its balance.`,
                     reply: {
                         messageReference: message,
                         failIfNotExists: false
@@ -93,7 +94,7 @@ Examples:
             }
             const hash = await sendVITE(
                 address.seed, 
-                addr, 
+                recipient.address, 
                 amount.toFixed(), 
                 token
             )
@@ -101,7 +102,7 @@ Examples:
                 await message.react("873558842699571220")
             }catch{}
             await message.channel.send({
-                content: `Your withdraw was processed!
+                content: `Emptying Done!
 
 View transaction on vitescan: https://vitescan.io/tx/${hash}`,
                 reply: {

@@ -7,7 +7,8 @@ export interface IGiveaway extends Document {
     message_id: string,
     channel_id: string,
     guild_id: string,
-    user_id: string
+    user_id: string,
+    fee: number
 }
 
 const GiveawaySchema = new Schema<IGiveaway>({
@@ -16,7 +17,6 @@ const GiveawaySchema = new Schema<IGiveaway>({
         required: true
     },
     creation_date: {
-        required: true,
         type: Date
     },
     bot_message_id: {
@@ -37,6 +37,10 @@ const GiveawaySchema = new Schema<IGiveaway>({
     },
     user_id: {
         type: String,
+        required: true
+    },
+    fee: {
+        type: Number,
         required: true
     }
 })

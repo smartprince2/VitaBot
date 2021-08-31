@@ -10,11 +10,11 @@ import { retryAsync, wait } from "../common/util";
 import BigNumber from "bignumber.js";
 import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction";
 import { EventEmitter } from "events";
+import asyncPool from "tiny-async-pool";
 
 export const viteEvents = new EventEmitter()
 
 const skipBlocks = []
-let promisesResolveSnapshotBlocks = []
 const hashToSender = {}
 
 const wsService = new WS_RPC(process.env.VITE_WS, 6e5, {
@@ -33,13 +33,6 @@ const powWSService = new WS_RPC("wss://node-tokyo.vite.net/ws", 6e5, {
 })
 export const powWSProvider = new vite.ViteAPI(powWSService, async () => {})*/
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
-    const SnapshotBlockEvent = await wsProvider.subscribe("createSnapshotBlockSubscription")
-    SnapshotBlockEvent.on(() => {
-        for(const r of promisesResolveSnapshotBlocks){
-            r()
-        }
-        promisesResolveSnapshotBlocks = []
-    })
     const AccountBlockEvent = await wsProvider.subscribe("createAccountBlockSubscription")
     AccountBlockEvent.on(async (result) => {
         try{
@@ -47,6 +40,7 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
             const block = await wsProvider.request("ledger_getAccountBlockByHash", result[0].hash)
             if(!block)return
             if(block.blockType !== 2)return
+            if(block.amount === "0")return
             const address = await Address.findOne({
                 address: block.toAddress,
                 network: "VITE"
@@ -62,12 +56,6 @@ export const wsProvider = new vite.ViteAPI(wsService, async () => {
         }
     })
 })
-
-export function waitForNextSnapshotBlock(){
-    return new Promise(r => {
-        promisesResolveSnapshotBlocks.push(r)
-    })
-}
 
 export async function receive(address:IAddress, block:any){
     // Ok, we received a deposit/tip
@@ -101,6 +89,7 @@ export async function receive(address:IAddress, block:any){
                 await accountBlock.sign()
                 await accountBlock.send()
             }catch(err){
+                console.error(err)
                 if(tries !== 2)await wait(20000)
                 throw err
             }
@@ -126,45 +115,52 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
         network: "VITE"
     })
     if(sendingAddress){
-        const [id, platform] = sendingAddress.handles[0].split(".")
+        const [id, platform, sendingVariant] = sendingAddress.handles[0].split(".")
         const [,,variant] = address.handles[0].split(".")
-        let mention = "Unknown User"
-        switch(platform){
-            case "Discord": {
-                let user = (await parseDiscordUser(id))[0]
-                if(user.id === client.user.id){
-                    //let's try to resolve the original id
-                    const sender = hashToSender[block.hash]
-                    if(sender){
-                        delete hashToSender[block.hash]
-                        const id = sender.split(".")[0]
-                        const tempUser = (await parseDiscordUser(id))[0]
-                        if(tempUser){
-                            user = tempUser
+        switch(sendingVariant){
+            case "Giveaway": 
+                text = `You won ${displayNumber} ${tokenNameToDisplayName(tokenName)} from a Giveaway!`+text
+            break
+            default: {
+                let mention = "Unknown User"
+                switch(platform){
+                    case "Discord": {
+                        let user = (await parseDiscordUser(id))[0]
+                        if(user.id === client.user?.id){
+                            //let's try to resolve the original id
+                            const sender = hashToSender[block.hash]
+                            if(sender){
+                                delete hashToSender[block.hash]
+                                const id = sender.split(".")[0]
+                                const tempUser = (await parseDiscordUser(id))[0]
+                                if(tempUser){
+                                    user = tempUser
+                                }
+                            }
                         }
+                        if(user){
+                            mention = user.tag
+                        }
+                        break
+                    }
+                    case "Faucet":{
+                        mention = "Faucet"
                     }
                 }
-                if(user){
-                    mention = user.tag
+                switch(variant){
+                    case "Giveaway": 
+                        text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were locked for a giveaway.`+text
+                    break
+                    case "Airdrop": 
+                        text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were locked for an airdrop.`+text
+                    break
+                    default: 
+                        text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention}!`+text
                 }
-                break
             }
-            case "Faucet":{
-                mention = "Faucet"
-            }
-        }
-        switch(variant){
-            case "Giveaway": 
-                text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were locked for a giveaway.`+text
-            break
-            case "Airdrop": 
-                text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were locked for an airdrop.`+text
-            break
-            default: 
-                text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention} !`+text
         }
     }else{
-        text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance !`+text
+        text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance!`+text
     }
     for(const handle of address.handles){
         const [id, service] = handle.split(".")
@@ -212,7 +208,7 @@ export async function bulkSend(from: IAddress, recipients: string[], amount: str
     if(from.paused)throw new Error("Address frozen, please contact an admin.")
     const hash = await sendVITE(from.seed, botAddress.address, new BigNumber(amount).times(recipients.length).toFixed(), tokenId)
     await new Promise(r => {
-        viteEvents.on("receive_"+hash, r)
+        viteEvents.once("receive_"+hash, r)
     })
     const transactions = await rawBulkSend(botAddress, recipients, amount, tokenId, from.handles[0])
     return await Promise.all([
@@ -250,47 +246,66 @@ export async function rawBulkSend(from: IAddress, recipients: string[], amount: 
     return Promise.all(promises)
 }
 
+let _id = 0
+
 export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string):Promise<string>{
+    const id = _id++
+    console.time("keypair-address-"+id)
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
+    console.timeEnd("keypair-address-"+id)
     
-    return await retryAsync(async (tries) => {
-        try{
-            const accountBlock = vite.accountBlock.createAccountBlock("send", {
-                toAddress: toAddress,
-                address: fromAddress.address,
-                tokenId: tokenId,
-                amount: amount
-            })
-            accountBlock.setProvider(wsProvider)
-            .setPrivateKey(keyPair.privateKey)
-            await accountBlock.autoSetPreviousAccountBlock()
-            const quota = await wsProvider.request("contract_getQuotaByAccount", fromAddress.address)
-            const availableQuota = new BigNumber(quota.currentQuota).div(21000)
-            if(availableQuota.isLessThan(1)){
-                //accountBlock.setProvider(powWSProvider)
-                await accountBlock.PoW()
+    try{
+        console.time("transaction-"+id)
+        const hash = await retryAsync(async (tries) => {
+            try{
+                console.time("create-account-block-"+id)
+                const accountBlock = vite.accountBlock.createAccountBlock("send", {
+                    toAddress: toAddress,
+                    address: fromAddress.address,
+                    tokenId: tokenId,
+                    amount: amount
+                })
                 accountBlock.setProvider(wsProvider)
-                /*const difficulty = await accountBlock.getDifficulty()
-                accountBlock.setDifficulty(difficulty)
-                const threshold = (2**256/(1+1/parseInt(difficulty))).toString(16)
-                const getNonceHash = vite.utils.blake2bHex(Buffer.concat([
-                    Buffer.from(accountBlock.originalAddress, "hex"),
-                    Buffer.from(accountBlock.previousHash, "hex")
-                ]), null, 32)
-                const work = await PoWManager.computeWork(getNonceHash, threshold)
-                accountBlock.setNonce(Buffer.from(work, "hex").toString("base64"))*/
+                .setPrivateKey(keyPair.privateKey)
+                console.timeEnd("create-account-block-"+id)
+                console.time("account-block-hash-"+id)
+                await accountBlock.autoSetPreviousAccountBlock()
+                console.timeEnd("account-block-hash-"+id)
+                console.time("quota-"+id)
+                const quota = await wsProvider.request("contract_getQuotaByAccount", fromAddress.address)
+                const availableQuota = new BigNumber(quota.currentQuota).div(21000)
+                if(availableQuota.isLessThan(1)){
+                    console.timeEnd("quota-"+id)
+                    console.time("pow-"+id)
+                    await accountBlock.PoW()
+                    console.timeEnd("pow-"+id)
+                }else{
+                    console.timeEnd("quota-"+id)
+                }
+                console.time("sign-"+id)
+                await accountBlock.sign()
+                console.timeEnd("sign-"+id)
+            
+                console.time("send-"+id)
+                const hash = (await accountBlock.send()).hash
+                console.timeEnd("send-"+id)
+                return hash
+            }catch(err){
+                if(tries !== 2){
+                    console.time("wait-"+id)
+                    await wait(20000)
+                    console.timeEnd("wait-"+id)
+                }
+                throw err
             }
-            await accountBlock.sign()
-        
-            return (await accountBlock.send()).hash
-        }catch(err){
-            if(tries !== 2){
-                await wait(20000)
-            }
-            throw err
-        }
-    }, 1)
+        }, 2)
+        console.timeEnd("transaction-"+id)
+        return hash
+    }catch(err){
+        console.timeEnd("transaction-"+id)
+        throw err
+    }
 }
 
 export async function getBalances(address: string){
@@ -310,7 +325,8 @@ export async function getBalances(address: string){
 
 export async function searchStuckTransactions(){
     const addresses = await Address.find()
-    for(const address of addresses){
+    const tokens = Object.values(tokenIds)
+    await asyncPool(10, addresses, async (address) => {
         try{
             // eslint-disable-next-line no-constant-condition
             while(true){
@@ -319,12 +335,32 @@ export async function searchStuckTransactions(){
                         "ledger_getUnreceivedBlocksByAddress",
                         address.address,
                         0,
-                        10
+                        20
                     )
                     if(blocks.length === 0)return true
-                    for(const block of blocks){
+                    for(const block of blocks.sort((b1, b2) => {
+                        if(b1.tokenId === b2.tokenId){
+                            const diff = BigInt(b1.amount)-BigInt(b2.amount)
+                            if(diff < 0n){
+                                return -1
+                            }else if(diff === 0n){
+                                return 0
+                            }else if(diff > 0n){
+                                return 1
+                            }
+                        }else{
+                            const i1 = tokens.indexOf(b1.tokenId)
+                            const i2 = tokens.indexOf(b2.tokenId)
+                            if(i1 === i2)return 0
+                            if(i1 < 0)return -1
+                            if(i2 < 0)return 1
+                            return i2-i1
+                        }
+                    })){
                         if(skipBlocks.includes(block.hash))continue
                         skipBlocks.push(block.hash)
+
+                        console.log("Stuck transaction found:", block.hash)
                 
                         await receive(address, block)
                         skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
@@ -336,17 +372,17 @@ export async function searchStuckTransactions(){
         }catch(err){
             console.error(err)
         }
-    }
+    })
 }
 
 (async () => {
-    // Start of the code ! Time to receive as most transactions as possible !
-    await Promise.all([
-        searchStuckTransactions(),
-        PendingTransaction.find()
-        .populate("address")
-        .exec()
-        .then(processBulkTransactions)
-    ])
-    setInterval(searchStuckTransactions, 10*60*1000)
+    // Start of the code! Time to receive stuck transactions
+    await PendingTransaction.find()
+    .populate("address")
+    .exec()
+    .then(processBulkTransactions)
+    // eslint-disable-next-line no-constant-condition
+    while(true){
+        await searchStuckTransactions()
+    }
 })()
