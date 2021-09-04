@@ -10,6 +10,7 @@ import Giveaway, { IGiveaway } from "../models/Giveaway"
 import ActionQueue from "../common/queue"
 import { generateDefaultEmbed } from "./util"
 import GiveawayEntry from "../models/GiveawayEntry"
+import GiveawayWinner from "../models/GiveawayWinner"
 
 export const watchingGiveawayMap = new Map<string, IGiveaway>()
 export const timeoutsGiveway = new Map<string, lt.Timeout>()
@@ -107,6 +108,10 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
     })
 }
 
+const giveaway_channels = {
+    "862416292760649768": "862416292760649773 870900472557502474 871022892832407602 871017878802014258 877465940474888212 878373710174773308     872195770076512366".split(" ")
+}
+
 export async function startGiveaway(giveaway:IGiveaway){
     const channel = client.channels.cache.get(giveaway.channel_id) as TextChannel
     if(!channel){
@@ -122,6 +127,14 @@ export async function startGiveaway(giveaway:IGiveaway){
         })
         giveaway.bot_message_id = message.id
         await giveaway.save()
+        await Promise.all((giveaway_channels[channel.guildId] || []).map(async (id:string) => {
+            if(id === giveaway.channel_id)return
+            const channel = client.channels.cache.get(id) as TextChannel
+            if(!channel)return
+            await channel.send({
+                embeds: [embed]
+            })
+        }))
     }catch(err){
         console.error("e", err)
         await giveaway.delete()
@@ -181,7 +194,7 @@ export async function endGiveaway(giveaway:IGiveaway){
             await refreshBotEmbed(giveaway)
         }catch{}
         try{
-            await channel.send({
+            const msg = await channel.send({
                 content: `The giveaway #${giveaway.message_id} ended! <@${winningEntry.user_id}> won!`,
                 reply: {
                     messageReference: giveaway.bot_message_id,
@@ -190,6 +203,14 @@ export async function endGiveaway(giveaway:IGiveaway){
                 allowedMentions: {
                     users: [winningEntry.user_id]
                 }
+            })
+            await GiveawayWinner.create({
+                message_id: giveaway.message_id,
+                user_id: winningEntry.user_id,
+                date: new Date(),
+                announce_id: msg.id,
+                channel_id: giveaway.channel_id,
+                guild_id: giveaway.guild_id
             })
         }catch{}
     }catch(err){

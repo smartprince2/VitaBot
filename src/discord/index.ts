@@ -13,6 +13,7 @@ import viteQueue from "../cryptocurrencies/viteQueue"
 import * as vite from "@vite/vitejs";
 import { getVITEAddressOrCreateOne, wsProvider } from "../cryptocurrencies/vite"
 import { searchGiveaways } from "./GiveawayManager"
+import discordqueue from "./discordqueue"
 
 export const client = new Discord.Client({
     allowedMentions: {

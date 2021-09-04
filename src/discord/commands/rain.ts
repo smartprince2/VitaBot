@@ -15,6 +15,7 @@ import activeQueue from "../activeQueue";
 import ActiveStatus from "../../models/ActiveStatus";
 import { durationUnits } from "../../common/util";
 import toptippers from "./toptippers";
+import ActiviaFreeze from "../../models/ActiviaFreeze";
 
 export default new class Rain implements Command {
     constructor(){
@@ -40,6 +41,10 @@ export default new class Rain implements Command {
             if(!hasRole)return
 
             await activeQueue.queueAction(message.author.id, async () => {
+                const frozen = await ActiviaFreeze.findOne({
+                    user_id: message.author.id
+                })
+                if(frozen)return
                 await ActiveStats.create({
                     user_id: message.author.id,
                     message_id: message.id,

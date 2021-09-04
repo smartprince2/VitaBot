@@ -7,7 +7,7 @@ export interface IGiveawayEntry extends Document {
 
 const GiveawayEntrySchema = new Schema<IGiveawayEntry>({
     message_id: {
-        type: Number,
+        type: String,
         required: true
     },
     user_id: {

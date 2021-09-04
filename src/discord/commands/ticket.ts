@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
-import { convert } from "../../common/convert";
+import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Giveaway from "../../models/Giveaway";
@@ -21,7 +21,7 @@ ${process.env.DISCORD_PREFIX}ticket`
     alias = ["ticket", "enter", "e"]
     usage = ""
 
-    async execute(message:Message, _, command:string){
+    async execute(message:Message, _){
         if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
             try{
                 await message.react("❌")
@@ -34,9 +34,9 @@ ${process.env.DISCORD_PREFIX}ticket`
         const giveaway = await Giveaway.findOne()
         if(!giveaway){
             try{
-                await message.react("❌")
+                await message.delete()
+                await message.author.send(`No giveaways were found.`)
             }catch{}
-            await message.author.send(`No giveaways were found.`)
             return
         }
 
@@ -61,9 +61,9 @@ ${process.env.DISCORD_PREFIX}ticket`
                 })
                 if(entry){
                     try{
-                        await message.react("❌")
+                        await message.delete()
+                        await message.author.send(`You are already registered in that giveaway. Use \`${process.env.DISCORD_PREFIX}ticketstatus\` to see the status of your entry.`)
                     }catch{}
-                    await message.author.send(`You are already registered in that giveaway. Use \`${process.env.DISCORD_PREFIX}ticketstatus\` to see the status of your entry.`)
                     return
                 }
                 const feeRaw = convert(giveaway.fee, "VITC", "RAW")
@@ -71,11 +71,11 @@ ${process.env.DISCORD_PREFIX}ticket`
                 const balance = new BigNumber(balances[tokenIds.VITC] || 0)
                 if(balance.isLessThan(feeRaw)){
                     try{
-                        await message.react("❌")
+                        await message.delete()
+                        await message.author.send(
+                            `You need ${giveaway.fee} VITC to enter this giveaway but you only have ${convert(balance, "RAW", "VITC")} VITC in your balance. Use .deposit to top up your account.`
+                        )
                     }catch{}
-                    await message.author.send(
-                        `You need ${giveaway.fee} VITC to enter this giveaway but you only have ${convert(balance, "RAW", "VITC")} VITC in your balance. Use .deposit to top up your account.`
-                    )
                     return
                 }
                 const hash = await sendVITE(
@@ -97,7 +97,8 @@ ${process.env.DISCORD_PREFIX}ticket`
                     })
                 ])
                 try{
-                    await message.react("873558842699571220")
+                    await message.delete()
+                    await message.author.send(`Your entry for the giveaway in ${message.guild.name} has been confirmed! ${giveaway.fee} ${tokenNameToDisplayName("VITC")} have been taken from your account as a giveaway entry fee.`)
                 }catch{}
             })
         }else{
@@ -106,7 +107,8 @@ ${process.env.DISCORD_PREFIX}ticket`
                 message_id: giveaway.message_id
             })
             try{
-                await message.react("873558842699571220")
+                await message.delete()
+                await message.author.send(`Your entry for the giveaway in ${message.guild.name} has been confirmed!`)
             }catch{}
         }
     }

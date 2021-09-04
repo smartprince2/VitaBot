@@ -21,7 +21,7 @@ export default new class BlacklistCommand implements Command {
             await message.reply("Please add the id of an user.")
             return
         }
-        const address = await discordqueue.queueAction(id, () => getVITEAddressOrCreateOne(id, "Discord"))
+        const address = await discordqueue.queueAction(user.id, () => getVITEAddressOrCreateOne(user.id, "Discord"))
         await message.channel.send(`Blacklisting User: ${user.tag} Address: ${address.address}`)
         if(address.paused){
             await message.channel.send("That user is already blacklisted.")
