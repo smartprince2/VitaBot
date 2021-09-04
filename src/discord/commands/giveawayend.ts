@@ -16,7 +16,7 @@ ${process.env.DISCORD_PREFIX}gend`
     alias = ["gend", "giveawayend"]
     usage = ""
 
-    async execute(message:Message, _, command:string){
+    async execute(message:Message){
         if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
             try{
                 await message.react("❌")

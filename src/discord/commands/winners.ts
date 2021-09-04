@@ -1,6 +1,5 @@
 import { Message } from "discord.js";
 import GiveawayWinner from "../../models/GiveawayWinner";
-import Tip from "../../models/Tip";
 import Command from "../command";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 

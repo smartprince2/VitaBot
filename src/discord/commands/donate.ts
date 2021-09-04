@@ -4,7 +4,6 @@ import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Giveaway from "../../models/Giveaway";
-import GiveawayEntry from "../../models/GiveawayEntry";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import BigNumber from "bignumber.js"

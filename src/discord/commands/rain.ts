@@ -31,7 +31,7 @@ export default new class Rain implements Command {
             if(/^[?.!]\w+/.test(content))return
 
             let hasRole = false
-            const member = await message.member.fetch().catch(e => null)
+            const member = await message.member.fetch().catch(() => null)
             if(!member)return
             for(const role of this.allowedRoles){
                 if(!member.roles.cache.has(role))continue

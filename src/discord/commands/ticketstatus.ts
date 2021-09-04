@@ -3,7 +3,6 @@ import { tokenNameToDisplayName } from "../../common/convert";
 import Giveaway from "../../models/Giveaway";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import Command from "../command";
-import { refreshBotEmbed } from "../GiveawayManager";
 import { generateDefaultEmbed } from "../util";
 import rain from "./rain";
 
@@ -17,7 +16,7 @@ ${process.env.DISCORD_PREFIX}ts`
     alias = ["ticketstatus", "ts"]
     usage = ""
 
-    async execute(message:Message, _, command:string){
+    async execute(message:Message){
         if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
             try{
                 await message.react("❌")

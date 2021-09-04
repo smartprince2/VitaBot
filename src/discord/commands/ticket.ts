@@ -21,7 +21,7 @@ ${process.env.DISCORD_PREFIX}ticket`
     alias = ["ticket", "enter", "e"]
     usage = ""
 
-    async execute(message:Message, _){
+    async execute(message:Message){
         if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
             try{
                 await message.react("❌")
