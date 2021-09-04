@@ -46,8 +46,12 @@ Examples:
         }
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
         if(command !== "tip" && currencyOrRecipient !== "VITC"){
-            message.reply(`Looks like you tried to use another currency than vitc. Please use the .tip command for this.`)
-            return
+            if(recipientsRaw.length > 0){
+                currencyOrRecipient = "VITC"
+            }else{
+                message.reply(`Looks like you tried to use another currency than vitc. Please use the .tip command for this.`)
+                return
+            }
         }
 
         if(!Object.keys(tokenIds).includes(currencyOrRecipient)){
