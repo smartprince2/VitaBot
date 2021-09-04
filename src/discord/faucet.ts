@@ -90,7 +90,7 @@ export async function initFaucet(){
                 err = JSON.stringify(err.error, null, "    ")
             }
             message.channel.send({
-                content: `The faucet throwed an error! Sorry for the inconvenience! Please report this to VitaBot's github:`,
+                content: `The faucet threw an error! Sorry for the inconvenience! Please report this to VitaBot's github:`,
                 embeds: [
                     generateDefaultEmbed()
                     .setDescription("```"+err+"```")

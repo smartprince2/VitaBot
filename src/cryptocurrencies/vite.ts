@@ -54,28 +54,20 @@ export async function receive(address:IAddress, block:any){
     // Ok, we received a deposit/tip
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
     await viteQueue.queueAction(address.address, async () => {
-        await retryAsync(async (tries) => {
-            try{
-                const accountBlock = vite.accountBlock.createAccountBlock("receive", {
-                    address: address.address,
-                    sendBlockHash: block.hash
-                })
-                accountBlock.setProvider(wsProvider)
-                .setPrivateKey(keyPair.privateKey)
-                await accountBlock.autoSetPreviousAccountBlock()
-                const quota = await wsProvider.request("contract_getQuotaByAccount", address.address)
-                const availableQuota = new BigNumber(quota.currentQuota).div(21000)
-                if(availableQuota.isLessThan(1)){
-                    await accountBlock.PoW()
-                }
-                await accountBlock.sign()
-                await accountBlock.send()
-            }catch(err){
-                console.error(err)
-                if(tries !== 2)await wait(20000)
-                throw err
-            }
-        }, 3)
+        const accountBlock = vite.accountBlock.createAccountBlock("receive", {
+            address: address.address,
+            sendBlockHash: block.hash
+        })
+        accountBlock.setProvider(wsProvider)
+        .setPrivateKey(keyPair.privateKey)
+        await accountBlock.autoSetPreviousAccountBlock()
+        const quota = await wsProvider.request("contract_getQuotaByAccount", address.address)
+        const availableQuota = new BigNumber(quota.currentQuota).div(21000)
+        if(availableQuota.isLessThan(1)){
+            await accountBlock.PoW()
+        }
+        await accountBlock.sign()
+        await accountBlock.send()
     })
 
     viteEvents.emit("receive_"+block.hash)

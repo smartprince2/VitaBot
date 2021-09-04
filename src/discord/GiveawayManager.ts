@@ -108,7 +108,7 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
     })
 }
 
-const giveaway_channels = {
+export const giveaway_channels = {
     "862416292760649768": "862416292760649773 870900472557502474 871022892832407602 871017878802014258 877465940474888212 878373710174773308     872195770076512366".split(" ")
 }
 
@@ -193,6 +193,14 @@ export async function endGiveaway(giveaway:IGiveaway){
         try{
             await refreshBotEmbed(giveaway)
         }catch{}
+        const winner = await GiveawayWinner.create({
+            message_id: giveaway.message_id,
+            user_id: winningEntry.user_id,
+            date: new Date(),
+            announce_id: null,
+            channel_id: giveaway.channel_id,
+            guild_id: giveaway.guild_id
+        })
         try{
             const msg = await channel.send({
                 content: `The giveaway #${giveaway.message_id} ended! <@${winningEntry.user_id}> won!`,
@@ -204,15 +212,11 @@ export async function endGiveaway(giveaway:IGiveaway){
                     users: [winningEntry.user_id]
                 }
             })
-            await GiveawayWinner.create({
-                message_id: giveaway.message_id,
-                user_id: winningEntry.user_id,
-                date: new Date(),
-                announce_id: msg.id,
-                channel_id: giveaway.channel_id,
-                guild_id: giveaway.guild_id
-            })
-        }catch{}
+            winner.announce_id = msg.id
+            await winner.save()
+        }catch(err){
+            console.error(err)
+        }
     }catch(err){
         console.error(err)
         throw new GiveawayError(`An error occured with the giveaway. Ask the admins to unlock Giveaway ${giveaway.message_id}'s funds.`)

@@ -12,23 +12,20 @@ export interface IGiveawayWinner extends Document {
 const GiveawayWinner = new Schema<IGiveawayWinner>({
     message_id: {
         type: String,
-        required: true,
-        unique: true
+        unique: true,
+        required: true
     },
     announce_id: {
         type: String,
-        required: true,
         unique: true
     },
     channel_id: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     guild_id: {
         type: String,
-        required: true,
-        unique: true
+        required: true
     },
     user_id: {
         type: String,
