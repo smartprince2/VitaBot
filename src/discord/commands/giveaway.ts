@@ -14,6 +14,7 @@ import Giveaway from "../../models/Giveaway";
 import { throwFrozenAccountError } from "../util";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import { endGiveaway, giveawayQueue, resolveGiveaway, startGiveaway, timeoutsGiveway, watchingGiveawayMap } from "../GiveawayManager";
+import Tip from "../../models/Tip";
 
 export default new class GiveawayCommand implements Command {
     description = "Start a new giveaway"
@@ -175,7 +176,15 @@ Examples:
                     }),
                     GiveawayEntry.create({
                         user_id: message.author.id,
-                        message_id: message.id
+                        message_id: message.id,
+                        date: new Date(),
+                        txhash: hash
+                    }),
+                    Tip.create({
+                        amount: parseFloat(fee.toFixed()),
+                        user_id: message.author.id,
+                        date: new Date(),
+                        txhash: hash
                     }),
                     new Promise(r => {
                         viteEvents.once("receive_"+hash, r)

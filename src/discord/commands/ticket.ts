@@ -87,7 +87,9 @@ ${process.env.DISCORD_PREFIX}ticket`
                 await Promise.all([
                     GiveawayEntry.create({
                         user_id: message.author.id,
-                        message_id: giveaway.message_id
+                        message_id: giveaway.message_id,
+                        date: new Date(),
+                        txhash: hash
                     }),
                     Tip.create({
                         amount: giveaway.fee,
