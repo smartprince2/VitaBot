@@ -1,8 +1,8 @@
 import { Message } from "discord.js";
 import Giveaway from "../../models/Giveaway";
 import Command from "../command";
+import { ALLOWED_GUILDS } from "../constants";
 import { refreshBotEmbed } from "../GiveawayManager";
-import rain from "./rain";
 
 export default new class GiveawayStatusCommand implements Command {
     description = "See the status of the current giveaway"
@@ -15,7 +15,7 @@ ${process.env.DISCORD_PREFIX}gs`
     usage = ""
 
     async execute(message:Message){
-        if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
+        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
             try{
                 await message.react("❌")
             }catch{}

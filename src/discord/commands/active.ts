@@ -3,8 +3,8 @@ import { durationUnits } from "../../common/util";
 import ActiveStats from "../../models/ActiveStats";
 import ActiveStatus from "../../models/ActiveStatus";
 import Command from "../command";
+import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed } from "../util";
-import toptippers from "./toptippers";
 
 export default new class ActiveCommand implements Command {
     description = "Get a list of users activia"
@@ -14,7 +14,7 @@ export default new class ActiveCommand implements Command {
     hidden = true
 
     async execute(message:Message){
-        if(!toptippers.admins.includes(message.author.id))return
+        if(!VITC_ADMINS.includes(message.author.id))return
 
         const [
             lastMessages,

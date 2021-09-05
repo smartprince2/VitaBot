@@ -8,8 +8,8 @@ import Command from "../command";
 import discordqueue from "../discordqueue";
 import BigNumber from "bignumber.js"
 import Tip from "../../models/Tip";
-import rain from "./rain";
 import help from "./help";
+import { ALLOWED_GUILDS } from "../constants";
 
 export default new class DonateCommand implements Command {
     description = "Add vitc/any token to the current giveaway pot."
@@ -23,7 +23,7 @@ ${process.env.DISCORD_PREFIX}do 10`
     usage = "<amount> {currency}"
 
     async execute(message:Message, args:string[], command:string){
-        if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
+        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
             try{
                 await message.react("❌")
             }catch{}

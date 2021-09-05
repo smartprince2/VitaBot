@@ -7,7 +7,6 @@ import discordqueue from "../discordqueue";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import rain from "./rain";
 import * as lt from "long-timeout"
 import { resolveDuration } from "../../common/util";
 import Giveaway from "../../models/Giveaway";
@@ -15,6 +14,7 @@ import { throwFrozenAccountError } from "../util";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import { endGiveaway, giveawayQueue, resolveGiveaway, startGiveaway, timeoutsGiveway, watchingGiveawayMap } from "../GiveawayManager";
 import Tip from "../../models/Tip";
+import { ALLOWED_GUILDS } from "../constants";
 
 export default new class GiveawayCommand implements Command {
     description = "Start a new giveaway"
@@ -29,15 +29,7 @@ Examples:
     usage = "<amount> <duration> {fee}"
 
     async execute(message:Message, args: string[], command: string){
-        if(![
-            "112006418676113408",
-            "696481194443014174",
-            "871221803580813373"
-        ].includes(message.author.id)){
-            await message.channel.send("That command is limited to Thomiz. Please don't use it.")
-            return
-        }
-        if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
+        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
             try{
                 await message.react("❌")
             }catch{}

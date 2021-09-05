@@ -10,6 +10,7 @@ import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import * as vite from "@vite/vitejs"
 import Address from "../../models/Address";
+import { BOT_OWNER } from "../constants";
 
 export default new class EmptyCommand implements Command {
     description = "Withdraw the funds on the tipbot from a stuck address"
@@ -20,7 +21,7 @@ export default new class EmptyCommand implements Command {
     hidden = true
 
     async execute(message:Message, args: string[], command: string){
-        if(message.author.id !== "696481194443014174")return
+        if(message.author.id !== BOT_OWNER)return
         let [
             // eslint-disable-next-line prefer-const
             amountRaw,

@@ -9,7 +9,7 @@ import Command from "../command";
 import discordqueue from "../discordqueue";
 import BigNumber from "bignumber.js"
 import Tip from "../../models/Tip";
-import rain from "./rain";
+import { ALLOWED_GUILDS } from "../constants";
 
 export default new class TicketCommand implements Command {
     description = "Enter the current running giveaway in the channel"
@@ -22,7 +22,7 @@ ${process.env.DISCORD_PREFIX}ticket`
     usage = ""
 
     async execute(message:Message){
-        if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
+        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
             try{
                 await message.react("❌")
             }catch{}

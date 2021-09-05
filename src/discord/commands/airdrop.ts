@@ -7,12 +7,12 @@ import discordqueue from "../discordqueue";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import rain from "./rain";
 import * as lt from "long-timeout"
 import { resolveDuration } from "../../common/util";
 import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import Airdrop from "../../models/Airdrop";
 import { endAirdrop, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
+import { ALLOWED_GUILDS, BOT_OWNER } from "../constants";
 
 export default new class AirdropCommand implements Command {
     description = "Start a new Airdrop"
@@ -29,11 +29,11 @@ Examples:
     hidden = true
 
     async execute(message:Message, args: string[], command: string){
-        if(message.author.id !== "696481194443014174"){
+        if(message.author.id !== BOT_OWNER){
             await message.channel.send("That command is limited to Thomiz. Please don't use it.")
             return
         }
-        if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
+        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
             try{
                 await message.react("❌")
             }catch{}

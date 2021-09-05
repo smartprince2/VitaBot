@@ -1,49 +1,10 @@
 import { Message } from "discord.js";
 import Tip from "../../models/Tip";
 import Command from "../command";
+import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 
 export default new class Toptippers implements Command {
-    admins: string[] = [
-        // VitaBot
-        "872912021379752026",
-
-        // 1appleaday
-        "862414189464256542",
-        // Kript
-        "112006418676113408",
-
-        // 5am
-        "871221803580813373",
-        // 6am
-        "769939235616325632",
-        // Jellyben
-        "828802422364831825",
-        // Not Thomiz
-        "696481194443014174",
-        // LUCA
-        "659508168304492565",
-        // mmmmm
-        "400552599499177986",
-        // imalfect
-        "852640730093453372",
-
-        // ispan
-        "698806044087943179",
-        // Rolex
-        "397215033882443799",
-        // shuttlecock
-        "861182006502359080",
-        // VitaMachine
-        "553060199510966293",
-        // Supreme Chancellor Palpatine
-        "356791504318234625",
-        // YaroslavaWise
-        "398394098127732738",
-        // TARZAN | WatchDog | IND
-        "709877129134997544"
-    ]
-
     description = "See the bot's top tippers"
     extended_description = `Display a list of the best tippers.
 
@@ -66,7 +27,7 @@ Examples:
             }
         ])
         const topTipps = topTippers
-        .filter(e => !this.admins.includes(e._id))
+        .filter(e => !VITC_ADMINS.includes(e._id))
         .sort((a, b) => b.sum-a.sum)
         .slice(0, 15)
         

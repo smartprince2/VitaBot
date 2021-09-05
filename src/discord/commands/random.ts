@@ -8,10 +8,10 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
-import rain from "./rain";
 import { randomFromArray } from "../../common/util";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
+import { getActiveUsers } from "../ActiviaManager";
 
 export default new class Random implements Command {
     description = "Tip one random person amongst active users"
@@ -53,7 +53,7 @@ Examples:
             )
             return
         }
-        const userList = (await rain.getActiveUsers())
+        const userList = (await getActiveUsers())
             .filter(e => e !== message.author.id)
         if(userList.length < 2){
             await message.reply(`There are less than 2 active users. Cannot random tip. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")||"empty"}`)

@@ -2,6 +2,7 @@ import { Message } from "discord.js";
 import { commands } from "..";
 import { VITABOT_GITHUB } from "../../common/constants";
 import Command from "../command";
+import { BOT_OWNER } from "../constants";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 import help from "./help";
 
@@ -13,7 +14,7 @@ export default new class DoAs implements Command {
     hidden = true
 
     async execute(message:Message, args: string[], doas: string){
-        if(message.author.id !== "696481194443014174")return
+        if(message.author.id !== BOT_OWNER)return
         
         const [
             command,

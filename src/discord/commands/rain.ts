@@ -10,107 +10,10 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
-import ActiveStats from "../../models/ActiveStats";
-import activeQueue from "../activeQueue";
-import ActiveStatus from "../../models/ActiveStatus";
-import { durationUnits } from "../../common/util";
-import toptippers from "./toptippers";
-import ActiviaFreeze from "../../models/ActiviaFreeze";
+import { ALLOWED_GUILDS } from "../constants";
+import { getActiveUsers } from "../ActiviaManager";
 
 export default new class Rain implements Command {
-    constructor(){
-        client.on("messageCreate", async message => {
-            const content = message.content
-            .replace(/<@!?\d+>|@(everyone|here)|<@&\d+>|<#\d+>|<a?:[\w\d_]+:\d+>/g, "")
-            if(!content || content.length < 2)return
-            if(
-                !message.guild ||
-                message.author.bot || 
-                !this.allowedGuilds.includes(message.guild.id)
-            )return
-            if(/^[?.!]\w+/.test(content))return
-
-            let hasRole = false
-            const member = await message.member.fetch().catch(() => null)
-            if(!member)return
-            for(const role of this.allowedRoles){
-                if(!member.roles.cache.has(role))continue
-                hasRole = true
-                break
-            }
-            if(!hasRole)return
-
-            await activeQueue.queueAction(message.author.id, async () => {
-                const frozen = await ActiviaFreeze.findOne({
-                    user_id: message.author.id
-                })
-                if(frozen)return
-                await ActiveStats.create({
-                    user_id: message.author.id,
-                    message_id: message.id,
-                    createdAt: new Date(),
-                    num: 1
-                })
-                const numOfActives = await ActiveStats.countDocuments({
-                    user_id: message.author.id,
-                    createdAt: {
-                        $gt: new Date(Date.now()-durationUnits.m*5)
-                    }
-                })
-                if(numOfActives >= 5){
-                    const active = await ActiveStatus.findOne({
-                        user_id: message.author.id
-                    })
-                    if(active){
-                        active.createdAt = new Date()
-                        await active.save()
-                    }else{
-                        await ActiveStatus.create({
-                            user_id: message.author.id,
-                            createdAt: new Date()
-                        })
-                    }
-                }
-            })
-        })
-        client.on("messageDelete", async message => {
-            if(!message.content || message.content.length < 3)return
-            if(
-                !message.guildId ||
-                !this.allowedGuilds.includes(message.guildId)
-            )return
-
-            await activeQueue.queueAction(message.author.id, async () => {
-                const doc = await ActiveStats.findOne({
-                    message_id: message.id
-                })
-                if(!doc)return
-                await doc.delete()
-                const numOfActives = await ActiveStats.countDocuments({
-                    user_id: message.author.id
-                })
-                if(numOfActives < 5){
-                    const active = await ActiveStatus.findOne({
-                        user_id: message.author.id
-                    })
-                    if(active){
-                        await active.delete()
-                    }
-                }
-            })
-        })
-    }
-
-    async getActiveUsers():Promise<string[]>{
-        const users = await ActiveStatus.find({
-            createdAt: {
-                $gt: new Date(Date.now()-durationUnits.m*30)
-            }
-        })
-        return users.map(e => e.user_id)
-        .filter(e => !toptippers.admins.includes(e))
-    }
-
     description = "Tip active users"
     extended_description = `Tip active users. 
 If they don't have an account on the tipbot, it will create one for them.
@@ -123,11 +26,8 @@ Examples:
     alias = ["vrain", "rain", "vitaminrain"]
     usage = "<amount>"
 
-    allowedGuilds = process.env.DISCORD_SERVER_IDS.split(",")
-    allowedRoles = process.env.DISCORD_RAIN_ROLES.split(",")
-
     async execute(message:Message, args: string[], command: string){
-        if(!message.guild || !this.allowedGuilds.includes(message.guild.id)){
+        if(!message.guild || !ALLOWED_GUILDS.includes(message.guild.id)){
             try{
                 await message.react("❌")
             }catch{}
@@ -143,7 +43,7 @@ Examples:
             await message.reply("The minimum amount to rain is 100 VITC.")
             return
         }
-        const userList = (await this.getActiveUsers())
+        const userList = (await getActiveUsers())
             .filter(e => e !== message.author.id)
         if(userList.length < 2){
             await message.reply(`There are less than 2 active users. Cannot rain. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")}`)

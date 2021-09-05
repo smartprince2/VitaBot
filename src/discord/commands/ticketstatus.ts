@@ -3,8 +3,8 @@ import { tokenNameToDisplayName } from "../../common/convert";
 import Giveaway from "../../models/Giveaway";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import Command from "../command";
+import { ALLOWED_GUILDS } from "../constants";
 import { generateDefaultEmbed } from "../util";
-import rain from "./rain";
 
 export default new class GiveawayStatusCommand implements Command {
     description = "See the status of your giveaway entry"
@@ -17,7 +17,7 @@ ${process.env.DISCORD_PREFIX}ts`
     usage = ""
 
     async execute(message:Message){
-        if(!message.guildId || !rain.allowedGuilds.includes(message.guildId)){
+        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
             try{
                 await message.react("❌")
             }catch{}

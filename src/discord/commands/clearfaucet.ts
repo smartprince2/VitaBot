@@ -12,6 +12,7 @@ import { durationUnits } from "../../common/util";
 import { bulkSend, getBalances, getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { tokenIds } from "../../common/constants";
+import { BOT_OWNER } from "../constants";
 
 export default new class ClearFaucetCommand implements Command {
     description = "Clear stuck transactions in the faucet"
@@ -21,7 +22,7 @@ export default new class ClearFaucetCommand implements Command {
     hidden = true
 
     async execute(message:Message, args: string[], command: string){
-        if(message.author.id !== "696481194443014174")return
+        if(message.author.id !== BOT_OWNER)return
         //if(message.channelId !== FAUCET_CHANNEL_ID)return
         
         let [

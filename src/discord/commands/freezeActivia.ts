@@ -4,8 +4,8 @@ import ActiveStatus from "../../models/ActiveStatus";
 import ActiviaFreeze from "../../models/ActiviaFreeze";
 import activeQueue from "../activeQueue";
 import Command from "../command";
+import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
-import toptippers from "./toptippers";
 
 export default new class FreezeActiviaCommand implements Command {
     description = "fuck you"
@@ -16,7 +16,7 @@ export default new class FreezeActiviaCommand implements Command {
 
     async execute(message:Message, args: string[], command: string){
         if(!message.guild)return
-        if(!toptippers.admins.includes(message.author.id))return
+        if(!VITC_ADMINS.includes(message.author.id))return
         
         if(command === "lsfreeze"){
             const freezes = await ActiviaFreeze.find()

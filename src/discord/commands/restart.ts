@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import Command from "../command";
-import toptippers from "./toptippers";
+import { VITC_ADMINS } from "../constants";
 
 export default new class Deposit implements Command {
     description = "Restart the bot"
@@ -10,7 +10,7 @@ export default new class Deposit implements Command {
     hidden = true
 
     async execute(message:Message){
-        if(!toptippers.admins.includes(message.author.id)){
+        if(!VITC_ADMINS.includes(message.author.id)){
             await message.reply("You don't have the permission.")
             return
         }
