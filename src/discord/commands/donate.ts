@@ -42,7 +42,7 @@ ${process.env.DISCORD_PREFIX}do 10`
             try{
                 await message.react("❌")
             }catch{}
-            await message.author.send(`The token ${currency} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
+            await message.author.send(`The token **${currency}** isn't supported. Use the command \`${process.env.DISCORD_PREFIX}lstokens\` to see a list of supported tokens.`)
             return
         }
         try{
@@ -75,7 +75,7 @@ ${process.env.DISCORD_PREFIX}do 10`
             if(amountRaw == "0"){
                 try{
                     await message.react("❌")
-                    await message.author.send(`You can't donate 0 ${tokenNameToDisplayName(currency)}.`)
+                    await message.author.send(`You can't donate nothing.`)
                 }catch{}
             }
             const balances = await getBalances(address.address)
@@ -105,7 +105,7 @@ ${process.env.DISCORD_PREFIX}do 10`
             }
             try{
                 await message.react("873558842699571220")
-                await message.author.send(`Thanks for donating to the prize pool!`)
+                await message.author.send(`Your donation of **${amount.toFixed()} ${tokenNameToDisplayName(currency)}** has been successfully added to the prize pool!`)
             }catch{}
         })
     }

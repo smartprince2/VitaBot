@@ -98,7 +98,7 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            message.author.send(`The maximum duration you are allowed to for a giveaway is ${maxDurationStr}. You need the MANAGE_CHANNELS permission to make a giveaway last longer.`)
+            message.author.send(`The maximum duration you are allowed to for a giveaway is **${maxDurationStr}**. You need the *MANAGE_CHANNELS* permission to make an airdrop last longer.`)
             return
         }
         const botMessage = await message.channel.send("Creating airdrop... Creating addresses and waiting for queue...")

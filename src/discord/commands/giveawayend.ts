@@ -43,13 +43,6 @@ ${process.env.DISCORD_PREFIX}gend`
         }
 
         const timeout = timeoutsGiveway.get(giveaway.message_id)
-        if(!timeout){
-            try{
-                await message.react("❌")
-            }catch{}
-            await message.author.send(`Couldn't find timeout in map. Please report that error to Thomiz.`)
-            return
-        }
 
         lt.clearTimeout(timeout)
         await endGiveaway(giveaway)

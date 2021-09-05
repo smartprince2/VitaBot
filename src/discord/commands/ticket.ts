@@ -100,7 +100,7 @@ ${process.env.DISCORD_PREFIX}ticket`
                 ])
                 try{
                     await message.delete()
-                    await message.author.send(`Your entry for the giveaway in ${message.guild.name} has been confirmed! ${giveaway.fee} ${tokenNameToDisplayName("VITC")} have been taken from your account as a giveaway entry fee.`)
+                    await message.author.send(`Your entry for the giveaway in **${message.guild.name}** has been confirmed! **${giveaway.fee} ${tokenNameToDisplayName("VITC")}** have been taken from your account as a giveaway entry fee.`)
                 }catch{}
             })
         }else{
@@ -110,7 +110,7 @@ ${process.env.DISCORD_PREFIX}ticket`
             })
             try{
                 await message.delete()
-                await message.author.send(`Your entry for the giveaway in ${message.guild.name} has been confirmed!`)
+                await message.author.send(`Your entry for the giveaway in **${message.guild.name}** has been confirmed!`)
             }catch{}
         }
     }
