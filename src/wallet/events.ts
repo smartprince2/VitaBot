@@ -13,7 +13,8 @@ export interface SendTransaction extends Transaction {
 
 
 export interface ReceiveTransaction extends Transaction {
-    type: "send"
+    type: "receive",
+    from_hash: string
 }
 
 export default new VitaBotEventEmitter<{

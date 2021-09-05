@@ -8,7 +8,7 @@ import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 
 export default new class FreezeActiviaCommand implements Command {
-    description = "fuck you"
+    description = "you shouldn't see this"
     extended_description = `You shouldn't see this.`
     alias = ["freezeactivia", "unfreezeactivia", "lsfreeze"]
     usage = "<id>"

@@ -5,7 +5,7 @@ import discordqueue from "../discordqueue";
 import { parseDiscordUser } from "../util";
 
 export default new class UnblacklistCommand implements Command {
-    description = "fuck you"
+    description = "you shouldn't see this"
     extended_description = `You shouldn't see this.`
     alias = ["unblacklist"]
     usage = "<id>"
