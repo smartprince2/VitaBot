@@ -69,7 +69,7 @@ Examples:
                 await message.react("❌")
             }catch{}
             await message.author.send(
-                `You can't send a tip of 0 ${currencyOrRecipient}.`
+                `You can't send a tip of **0 ${tokenNameToDisplayName(currencyOrRecipient)}**.`
             )
             return
         }

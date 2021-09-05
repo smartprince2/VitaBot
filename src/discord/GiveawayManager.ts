@@ -23,7 +23,6 @@ export async function searchGiveaways(){
     for(const giveaway of giveaways){
         const message_id = giveaway.message_id
         if(watchingGiveawayMap.has(message_id))continue
-        console.log(giveaway)
         watchingGiveawayMap.set(message_id, giveaway)
         giveawayQueue.queueAction("current", async () => {
             const giveaway = await Giveaway.findOne({
