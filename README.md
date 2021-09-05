@@ -5,7 +5,7 @@
 # VitaBot
 This is a tipbot for [Vitamin Coin 💊](https://vitamincoin.org)! It is currently in their [Discord](https://discord.gg/sUvQufEqna)!
 # How to use this bot?
-The prefix is `.`, List all commands by doing `.help`.
+Do `.help` to see a list of commands.
 # Add this bot to your server
 If you want to have this bot in your server, simply click [there](https://discord.com/api/oauth2/authorize?client_id=872912021379752026&permissions=388160&scope=bot). You won't have every functionnalities, like giveaways and rains, but tipping will work.
 
