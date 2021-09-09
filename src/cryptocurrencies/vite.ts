@@ -1,16 +1,17 @@
 import { Platform, tokenIds } from "../common/constants";
 import Address, { IAddress } from "../models/Address";
-import * as vite from "@vite/vitejs";
-import WS_RPC from "@vite/vitejs-ws";
+import * as vite from "vitejs-notthomiz";
+import WS_RPC from "vitejs-notthomiz-ws";
 import { client } from "../discord";
 import viteQueue from "./viteQueue";
 import { convert, tokenNameToDisplayName } from "../common/convert";
 import { parseDiscordUser } from "../discord/util";
-import { retryAsync, wait } from "../common/util";
+import { durationUnits, wait } from "../common/util";
 import BigNumber from "bignumber.js";
 import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction";
 import { EventEmitter } from "events";
 import asyncPool from "tiny-async-pool";
+import Giveaway from "../models/Giveaway";
 
 export const viteEvents = new EventEmitter()
 
@@ -60,11 +61,16 @@ export async function receive(address:IAddress, block:any){
         })
         accountBlock.setProvider(wsProvider)
         .setPrivateKey(keyPair.privateKey)
-        await accountBlock.autoSetPreviousAccountBlock()
-        const quota = await wsProvider.request("contract_getQuotaByAccount", address.address)
-        const availableQuota = new BigNumber(quota.currentQuota).div(21000)
-        if(availableQuota.isLessThan(1)){
-            await accountBlock.PoW()
+        const [
+            quota
+        ] = await Promise.all([
+            wsProvider.request("contract_getQuotaByAccount", address.address),
+            accountBlock.autoSetPreviousAccountBlock()
+        ])
+        const availableQuota = new BigNumber(quota.currentQuota)
+        if(availableQuota.isLessThan("21000")){
+            accountBlock.difficulty = "67108863"
+            await accountBlock.PoW(accountBlock.difficulty)
         }
         await accountBlock.sign()
         await accountBlock.send()
@@ -220,68 +226,32 @@ export async function rawBulkSend(from: IAddress, recipients: string[], amount: 
     return Promise.all(promises)
 }
 
-let _id = 0
-
 export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string):Promise<string>{
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const id = _id++
-    //console.time("keypair-address-"+id)
     const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
     const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
-    //console.timeEnd("keypair-address-"+id)
-    
-    // eslint-disable-next-line no-useless-catch
-    try{
-        //console.time("transaction-"+id)
-        const hash = await retryAsync(async (tries) => {
-            try{
-                //console.time("create-account-block-"+id)
-                const accountBlock = vite.accountBlock.createAccountBlock("send", {
-                    toAddress: toAddress,
-                    address: fromAddress.address,
-                    tokenId: tokenId,
-                    amount: amount
-                })
-                accountBlock.setProvider(wsProvider)
-                .setPrivateKey(keyPair.privateKey)
-                //console.timeEnd("create-account-block-"+id)
-                //console.time("account-block-hash-"+id)
-                await accountBlock.autoSetPreviousAccountBlock()
-                //console.timeEnd("account-block-hash-"+id)
-                //console.time("quota-"+id)
-                const quota = await wsProvider.request("contract_getQuotaByAccount", fromAddress.address)
-                const availableQuota = new BigNumber(quota.currentQuota).div(21000)
-                if(availableQuota.isLessThan(1)){
-                    //console.timeEnd("quota-"+id)
-                    //console.time("pow-"+id)
-                    await accountBlock.PoW()
-                    //console.timeEnd("pow-"+id)
-                }else{
-                    //console.timeEnd("quota-"+id)
-                }
-                //console.time("sign-"+id)
-                await accountBlock.sign()
-                //console.timeEnd("sign-"+id)
-            
-                //console.time("send-"+id)
-                const hash = (await accountBlock.send()).hash
-                //console.timeEnd("send-"+id)
-                return hash
-            }catch(err){
-                if(tries !== 2){
-                    //console.time("wait-"+id)
-                    await wait(20000)
-                    //console.timeEnd("wait-"+id)
-                }
-                throw err
-            }
-        }, 2)
-        //console.timeEnd("transaction-"+id)
-        return hash
-    }catch(err){
-        //console.timeEnd("transaction-"+id)
-        throw err
+
+    const accountBlock = vite.accountBlock.createAccountBlock("send", {
+        toAddress: toAddress,
+        address: fromAddress.address,
+        tokenId: tokenId,
+        amount: amount
+    })
+    accountBlock.setProvider(wsProvider)
+    .setPrivateKey(keyPair.privateKey)
+    const [
+        quota
+    ] = await Promise.all([
+        wsProvider.request("contract_getQuotaByAccount", fromAddress.address),
+        accountBlock.autoSetPreviousAccountBlock()
+    ])
+    const availableQuota = new BigNumber(quota.currentQuota)
+    if(availableQuota.isLessThan("21000")){
+        accountBlock.difficulty = "67108863"
+        await accountBlock.PoW(accountBlock.difficulty)
     }
+    await accountBlock.sign()
+    
+    return (await accountBlock.send()).hash
 }
 
 export async function getBalances(address: string){
@@ -302,7 +272,7 @@ export async function getBalances(address: string){
 export async function searchStuckTransactions(){
     const addresses = await Address.find()
     const tokens = Object.values(tokenIds)
-    await asyncPool(1, addresses, async (address) => {
+    await asyncPool(25, addresses, async address => {
         try{
             // eslint-disable-next-line no-constant-condition
             while(true){
@@ -353,17 +323,25 @@ export async function searchStuckTransactions(){
 }
 
 (async () => {
-    // Start of the code! Time to receive stuck transactions
-    try{
-        await PendingTransaction.find()
-        .populate("address")
-        .exec()
-        .then(processBulkTransactions)
-    }catch(err){
-        console.error(err)
-    }
-    // eslint-disable-next-line no-constant-condition
-    while(true){
-        await searchStuckTransactions()
-    }
+    // Start of the code! 
+    await Promise.all([
+        (async () => {
+            // Send tips/rains that are stuck
+            try{
+                await PendingTransaction.find()
+                .populate("address")
+                .exec()
+                .then(processBulkTransactions)
+            }catch(err){
+                console.error(err)
+            }
+        })(),
+        (async () => {
+            // receive stuck tranactions
+            // eslint-disable-next-line no-constant-condition
+            while(true){
+                await searchStuckTransactions()
+            }
+        })()
+    ])
 })()
