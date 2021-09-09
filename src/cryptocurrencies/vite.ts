@@ -62,17 +62,30 @@ export async function receive(address:IAddress, block:any){
         accountBlock.setProvider(wsProvider)
         .setPrivateKey(keyPair.privateKey)
         const [
-            quota
+            quota,
+            difficulty
         ] = await Promise.all([
             wsProvider.request("contract_getQuotaByAccount", address.address),
             accountBlock.autoSetPreviousAccountBlock()
+            .then(() => wsProvider.request("ledger_getPoWDifficulty", {
+                address: accountBlock.address,
+                previousHash: accountBlock.previousHash,
+                blockType: accountBlock.blockType,
+                toAddress: accountBlock.toAddress,
+                data: accountBlock.data
+            })) as Promise<{
+                requiredQuota: string;
+                difficulty: string;
+                qc: string;
+                isCongestion: boolean;
+            }>
         ])
         const availableQuota = new BigNumber(quota.currentQuota)
-        if(availableQuota.isLessThan("21000")){
-            accountBlock.difficulty = "67108863"
-            await accountBlock.PoW(accountBlock.difficulty)
+        if(availableQuota.isLessThan(difficulty.requiredQuota)){
+            await accountBlock.PoW(difficulty.difficulty)
         }
         await accountBlock.sign()
+
         await accountBlock.send()
     })
 
@@ -239,15 +252,27 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
     accountBlock.setProvider(wsProvider)
     .setPrivateKey(keyPair.privateKey)
     const [
-        quota
+        quota,
+        difficulty
     ] = await Promise.all([
         wsProvider.request("contract_getQuotaByAccount", fromAddress.address),
         accountBlock.autoSetPreviousAccountBlock()
+        .then(() => wsProvider.request("ledger_getPoWDifficulty", {
+            address: accountBlock.address,
+            previousHash: accountBlock.previousHash,
+            blockType: accountBlock.blockType,
+            toAddress: accountBlock.toAddress,
+            data: accountBlock.data
+        })) as Promise<{
+            requiredQuota: string;
+            difficulty: string;
+            qc: string;
+            isCongestion: boolean;
+        }>
     ])
     const availableQuota = new BigNumber(quota.currentQuota)
-    if(availableQuota.isLessThan("21000")){
-        accountBlock.difficulty = "67108863"
-        await accountBlock.PoW(accountBlock.difficulty)
+    if(availableQuota.isLessThan(difficulty.requiredQuota)){
+        await accountBlock.PoW(difficulty.difficulty)
     }
     await accountBlock.sign()
     
