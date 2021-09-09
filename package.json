@@ -33,6 +33,7 @@
   "private": true,
   "devDependencies": {
     "@types/express": "^4.17.13",
+    "@types/inquirer": "^8.1.1",
     "@types/long-timeout": "^0.1.0",
     "@types/node": "^16.4.12",
     "@types/node-fetch": "^2.5.12",
@@ -52,6 +53,7 @@
     "discord.js": "13",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "inquirer": "^8.1.2",
     "long-timeout": "^0.1.1",
     "modernlog": "^1.0.1",
     "mongoose": "^5.13.5",
