@@ -26,10 +26,13 @@ specifiers:
   node-fetch: ^2.6.1
   qrcode: ^1.4.4
   tiny-async-pool: ^1.2.0
+  twit: ^2.2.11
   twitter: ^1.7.1
-  twitter-v2: ^1.1.0
   typescript: ^4.3.5
   utf-8-validate: ^5.0.5
+  vitejs-notthomiz: ^2.3.15
+  vitejs-notthomiz-ws: ^2.3.15
+  ws: ^8.2.1
   zlib-sync: ^0.1.7
 
 dependencies:
@@ -47,8 +50,11 @@ dependencies:
   node-fetch: 2.6.1
   qrcode: 1.4.4
   tiny-async-pool: 1.2.0
+  twit: 2.2.11
   twitter: 1.7.1
-  twitter-v2: 1.1.0
+  vitejs-notthomiz: 2.3.15
+  vitejs-notthomiz-ws: 2.3.15
+  ws: 8.2.1_72ef9f06cb99540da679cbf1bf7a3256
 
 optionalDependencies:
   bufferutil: 4.0.3
@@ -452,13 +458,6 @@ packages:
       scryptsy: 2.1.0
       websocket: 1.0.34
       xhr2: 0.2.1
-    dev: false
-
-  /abort-controller/3.0.0:
-    resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
-    engines: {node: '>=6.5'}
-    dependencies:
-      event-target-shim: 5.0.1
     dev: false
 
   /accepts/1.3.7:
@@ -1197,11 +1196,6 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
-  /event-target-shim/5.0.1:
-    resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
-    engines: {node: '>=6'}
-    dev: false
-
   /evp_bytestokey/1.0.3:
     resolution: {integrity: sha512-/f2Go4TognH/KvCISP7OUsHn85hT9nUkxxA9BEWxFn+Oj9o8ZNLm/40hdlgSLyuOimsrTKLUMEorQexp/aPQeA==}
     dependencies:
@@ -1920,10 +1914,6 @@ packages:
     hasBin: true
     dev: false
 
-  /oauth-1.0a/2.2.6:
-    resolution: {integrity: sha512-6bkxv3N4Gu5lty4viIcIAnq5GbxECviMBeKR3WX/q87SPQ8E8aursPZUtsXDnxCs787af09WPRBLqYrf/lwoYQ==}
-    dev: false
-
   /oauth-sign/0.9.0:
     resolution: {integrity: sha512-fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==}
     dev: false
@@ -2377,12 +2367,6 @@ packages:
     dev: false
     optional: true
 
-  /split/1.0.1:
-    resolution: {integrity: sha512-mTyOoPbrivtXnwnIxZRFYRrPNtEFKlpB2fvjSnCQUiAA6qAZzqwna5envK4uk6OIeP17CsdF3rSBGYVBsU0Tkg==}
-    dependencies:
-      through: 2.3.8
-    dev: false
-
   /sprintf-js/1.0.3:
     resolution: {integrity: sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=}
     dev: true
@@ -2487,10 +2471,6 @@ packages:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
     dev: true
 
-  /through/2.3.8:
-    resolution: {integrity: sha1-DdTJ/6q8NXlgsbckEV1+Doai4fU=}
-    dev: false
-
   /tiny-async-pool/1.2.0:
     resolution: {integrity: sha512-PY/OiSenYGBU3c1nTuP1HLKRkhKFDXsAibYI5GeHbHw2WVpt6OFzAPIRP94dGnS66Jhrkheim2CHAXUNI4XwMg==}
     dependencies:
@@ -2550,14 +2530,13 @@ packages:
     resolution: {integrity: sha1-WuaBd/GS1EViadEIr6k/+HQ/T2Q=}
     dev: false
 
-  /twitter-v2/1.1.0:
-    resolution: {integrity: sha512-BsoeFydwDgeS2coyIwxWkWXDxfnck8AtFQrQNY3ztkFJqIXyI1MKiGWjGvHA7U2SocUDlDQ3x1mtxQjr9xpyyg==}
+  /twit/2.2.11:
+    resolution: {integrity: sha512-BkdwvZGRVoUTcEBp0zuocuqfih4LB+kEFUWkWJOVBg6pAE9Ebv9vmsYTTrfXleZGf45Bj5H3A1/O9YhF2uSYNg==}
     engines: {node: '>=0.10.0'}
     dependencies:
-      abort-controller: 3.0.0
-      node-fetch: 2.6.1
-      oauth-1.0a: 2.2.6
-      split: 1.0.1
+      bluebird: 3.5.1
+      mime: 1.6.0
+      request: 2.88.2
     dev: false
 
   /twitter/1.7.1:
@@ -2672,6 +2651,50 @@ packages:
       extsprintf: 1.3.0
     dev: false
 
+  /vitejs-notthomiz-ws/2.3.15:
+    resolution: {integrity: sha512-dE9I3cxDwrqu1TwEi4yrPJ5zCVsv52Yr2YEUc3x9f3NPwjPjbXn/H2KYFnxVjxn2ceL0jWqP+VSu2f+Syhm9fQ==}
+    dependencies:
+      '@sisi/ed25519-blake2b-hd-key': 1.0.2
+      '@sisi/tweetnacl-blake2b': 1.0.0
+      bip39: 3.0.4
+      blake2b: 2.1.3
+      blakejs: 1.1.1
+      bn.js: 5.2.0
+      browserify-aes: 1.2.0
+      buffer: 5.7.1
+      create-hmac: 1.1.7
+      es6-promise: 4.2.8
+      jsonrpc-lite: 2.2.0
+      net: 1.0.2
+      pure-uuid: 1.6.2
+      qs: 6.10.1
+      scryptsy: 2.1.0
+      websocket: 1.0.34
+      xhr2: 0.2.1
+    dev: false
+
+  /vitejs-notthomiz/2.3.15:
+    resolution: {integrity: sha512-Nas7US8vexr1ZX8kMiEg+fULmlvmh3FHRVDDRvnBDBbkqzGGCjh8xh6op05xR9BF+FcAxl2Ekldk5yKGOIring==}
+    dependencies:
+      '@sisi/ed25519-blake2b-hd-key': 1.0.2
+      '@sisi/tweetnacl-blake2b': 1.0.0
+      bip39: 3.0.4
+      blake2b: 2.1.3
+      blakejs: 1.1.1
+      bn.js: 5.2.0
+      browserify-aes: 1.2.0
+      buffer: 5.7.1
+      create-hmac: 1.1.7
+      es6-promise: 4.2.8
+      jsonrpc-lite: 2.2.0
+      net: 1.0.2
+      pure-uuid: 1.6.2
+      qs: 6.10.1
+      scryptsy: 2.1.0
+      websocket: 1.0.34
+      xhr2: 0.2.1
+    dev: false
+
   /websocket/1.0.34:
     resolution: {integrity: sha512-PRDso2sGwF6kM75QykIesBijKSVceR6jL2G8NGYyq2XrItNC2P5/qL5XeR056GhA+Ly7JMFvJb9I312mJfmqnQ==}
     engines: {node: '>=4.0.0'}
@@ -2717,6 +2740,22 @@ packages:
   /ws/7.5.3_72ef9f06cb99540da679cbf1bf7a3256:
     resolution: {integrity: sha512-kQ/dHIzuLrS6Je9+uv81ueZomEwH0qVYstcAQ4/Z93K8zeko9gtAbttJWzoC5ukqXY1PpoouV3+VSOqEAFt5wg==}
     engines: {node: '>=8.3.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: ^5.0.2
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+    dependencies:
+      bufferutil: 4.0.3
+      utf-8-validate: 5.0.5
+    dev: false
+
+  /ws/8.2.1_72ef9f06cb99540da679cbf1bf7a3256:
+    resolution: {integrity: sha512-XkgWpJU3sHU7gX8f13NqTn6KQ85bd1WU7noBHTT8fSohx7OS1TPY8k+cyRPCzFkia7C4mM229yeHr1qK9sM4JQ==}
+    engines: {node: '>=10.0.0'}
     peerDependencies:
       bufferutil: ^4.0.1
       utf-8-validate: ^5.0.2

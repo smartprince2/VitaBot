@@ -58,8 +58,11 @@
     "node-fetch": "^2.6.1",
     "qrcode": "^1.4.4",
     "tiny-async-pool": "^1.2.0",
+    "twit": "^2.2.11",
     "twitter": "^1.7.1",
-    "twitter-v2": "^1.1.0"
+    "vitejs-notthomiz": "^2.3.15",
+    "vitejs-notthomiz-ws": "^2.3.15",
+    "ws": "^8.2.1"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.3",
