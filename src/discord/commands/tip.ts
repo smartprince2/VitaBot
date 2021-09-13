@@ -9,6 +9,7 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Tip from "../../models/Tip";
+import { BOT_OWNER } from "../constants";
 
 export default new class TipCommand implements Command {
     description = "Tip someone on Discord"
@@ -58,7 +59,7 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            await message.author.send(`The token **${currencyOrRecipient}** isn't supported. Use the command \`${process.env.DISCORD_PREFIX}lstokens\` to see a list of supported tokens.`)
+            await message.author.send(`The token **${currencyOrRecipient}** isn't supported.`)
             return
         }
         if(recipientsRaw.length === 0)return help.execute(message, [command])
@@ -79,7 +80,15 @@ Examples:
         for(const recipient of recipientsRaw){
             promises.push((async () => {
                 try{
-                    const users = await parseDiscordUser(recipient)
+                    let users = await parseDiscordUser(recipient)
+                    if(message.author.id === BOT_OWNER){
+                        if(recipient === "@everyone"){
+                            const members = await message.guild.members.fetch()
+                            users = members.filter(e => 
+                                !e.user.bot
+                            ).map(e => e.user)
+                        }
+                    }
                     for(const user of users){
                         // couldn't find it
                         if(!user)continue

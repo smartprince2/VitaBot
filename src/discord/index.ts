@@ -18,7 +18,8 @@ export const client = new Discord.Client({
     intents: [
         Discord.Intents.FLAGS.GUILDS,
         Discord.Intents.FLAGS.GUILD_MESSAGES,
-        Discord.Intents.FLAGS.DIRECT_MESSAGES
+        Discord.Intents.FLAGS.DIRECT_MESSAGES,
+        Discord.Intents.FLAGS.GUILD_MEMBERS
     ],
     partials: [
         "MESSAGE",
@@ -65,7 +66,7 @@ client.on("messageCreate", async message => {
     }
     if(!message.content.startsWith(prefix))return
     if(message.author.bot)return
-    const args = message.content.trim().slice(prefix.length).split(/ +/g)
+    const args = message.content.slice(prefix.length).trim().split(/ +/g)
     const command = args.shift().toLowerCase()
 
     const cmd = commands.get(command)

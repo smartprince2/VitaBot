@@ -9,7 +9,7 @@ import discordqueue from "../discordqueue";
 import BigNumber from "bignumber.js"
 import Tip from "../../models/Tip";
 import help from "./help";
-import { ALLOWED_GUILDS } from "../constants";
+import { refreshBotEmbed } from "../GiveawayManager";
 
 export default new class DonateCommand implements Command {
     description = "Add vitc/any token to the current giveaway pot."
@@ -23,7 +23,7 @@ ${process.env.DISCORD_PREFIX}do 10`
     usage = "<amount> {currency}"
 
     async execute(message:Message, args:string[], command:string){
-        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
+        if(!message.guildId){
             try{
                 await message.react("❌")
             }catch{}
@@ -42,13 +42,15 @@ ${process.env.DISCORD_PREFIX}do 10`
             try{
                 await message.react("❌")
             }catch{}
-            await message.author.send(`The token **${currency}** isn't supported. Use the command \`${process.env.DISCORD_PREFIX}lstokens\` to see a list of supported tokens.`)
+            await message.author.send(`The token **${currency}** isn't supported.`)
             return
         }
         try{
             await message.react("💊")
         }catch{}
-        const giveaway = await Giveaway.findOne()
+        const giveaway = await Giveaway.findOne({
+            guild_id: message.guildId
+        })
         if(!giveaway){
             try{
                 await message.react("❌")
@@ -108,5 +110,6 @@ ${process.env.DISCORD_PREFIX}do 10`
                 await message.author.send(`Your donation of **${amount.toFixed()} ${tokenNameToDisplayName(currency)}** has been successfully added to the prize pool!`)
             }catch{}
         })
+        await refreshBotEmbed(giveaway)
     }
 }

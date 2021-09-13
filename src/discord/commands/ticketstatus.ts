@@ -3,10 +3,9 @@ import { tokenNameToDisplayName } from "../../common/convert";
 import Giveaway from "../../models/Giveaway";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import Command from "../command";
-import { ALLOWED_GUILDS } from "../constants";
 import { generateDefaultEmbed } from "../util";
 
-export default new class GiveawayStatusCommand implements Command {
+export default new class TicketStatusCommand implements Command {
     description = "See the status of your giveaway entry"
     extended_description = `See the status of your entry.
 Will display the amount you paid in fees, the time, and the transaction on vitescan.
@@ -17,7 +16,7 @@ ${process.env.DISCORD_PREFIX}ts`
     usage = ""
 
     async execute(message:Message){
-        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
+        if(!message.guildId){
             try{
                 await message.react("❌")
             }catch{}
@@ -26,7 +25,9 @@ ${process.env.DISCORD_PREFIX}ts`
         try{
             await message.react("💊")
         }catch{}
-        const giveaway = await Giveaway.findOne()
+        const giveaway = await Giveaway.findOne({
+            guild_id: message.guildId
+        })
         if(!giveaway){
             try{
                 await message.react("❌")
@@ -43,7 +44,7 @@ ${process.env.DISCORD_PREFIX}ts`
             try{
                 await message.react("❌")
             }catch{}
-            await message.reply(`You didn't participate in the current giveaway yet. Please do \`${process.env.DISCORD_PREFIX}ticket\` to enter this giveaway!`)
+            await message.author.send(`You didn't participate in the current giveaway yet. Please do \`${process.env.DISCORD_PREFIX}ticket\` to enter this giveaway!`)
             return
         }
         const embed = generateDefaultEmbed()
@@ -51,7 +52,7 @@ ${process.env.DISCORD_PREFIX}ts`
         .setDescription(`Fees paid: **${giveaway.fee} ${tokenNameToDisplayName("VITC")}**
 Entered **<t:${Math.floor(entry.date.getTime()/1000)}:R>**
 [View Vitescan](https://vitescan.io/tx/${entry.txhash})`)
-        await message.reply({
+        await message.author.send({
             embeds: [embed]
         })
         try{

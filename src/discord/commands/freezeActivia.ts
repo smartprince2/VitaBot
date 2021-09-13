@@ -63,7 +63,7 @@ export default new class FreezeActiviaCommand implements Command {
                                 ActiveStats.deleteMany({
                                     user_id: user.id
                                 }),
-                                ActiveStatus.findOneAndDelete({
+                                ActiveStatus.deleteMany({
                                     user_id: user.id
                                 })
                             ])

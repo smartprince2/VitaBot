@@ -4,7 +4,7 @@ import { BOT_VERSION } from "../../common/constants";
 import Command from "../command";
 import { generateDefaultEmbed } from "../util";
 
-export default new class Help implements Command {
+export default new class HelpCommand implements Command {
     description = "💊"
     extended_description = `This is the **help** command. You'll find a lot of informations on the other commands of the bot.
     

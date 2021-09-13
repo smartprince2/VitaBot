@@ -7,7 +7,7 @@ import Command from "../command";
 import discordqueue from "../discordqueue";
 import { generateDefaultEmbed } from "../util";
 
-export default new class Balance implements Command {
+export default new class BalanceCommand implements Command {
     description = "Get your balance"
     extended_description = "Get the balance in your tipbot account."
     alias = ["balance", "bal"]

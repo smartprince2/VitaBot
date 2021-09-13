@@ -26,7 +26,8 @@ export default new class ActiveCommand implements Command {
                     $match: {
                         createdAt: {
                             $gt: new Date(Date.now()-durationUnits.m*30)
-                        }
+                        },
+                        guild_id: message.guildId
                     }
                 },
                 {
@@ -41,14 +42,16 @@ export default new class ActiveCommand implements Command {
             ActiveStatus.find({
                 createdAt: {
                     $gt: new Date(Date.now()-durationUnits.m*30)
-                }
+                },
+                guild_id: message.guildId
             }),
             ActiveStats.aggregate([
                 {
                     $match: {
                         createdAt: {
                             $gt: new Date(Date.now()-durationUnits.m*5)
-                        }
+                        },
+                        guild_id: message.guildId
                     }
                 },
                 {

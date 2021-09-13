@@ -1,4 +1,4 @@
-import { Platform, tokenIds } from "../common/constants";
+import { Platform, tokenDecimals, tokenIds, tokenNames } from "../common/constants";
 import Address, { IAddress } from "../models/Address";
 import * as vite from "vitejs-notthomiz";
 import WS_RPC from "vitejs-notthomiz-ws";
@@ -27,29 +27,71 @@ const wsService = new WS_RPC(process.env.VITE_WS, 6e5, {
 })
 
 export const wsProvider = new vite.ViteAPI(wsService, async () => {
-    const AccountBlockEvent = await wsProvider.subscribe("createAccountBlockSubscription")
-    AccountBlockEvent.on(async (result) => {
-        try{
-            if(skipBlocks.includes(result[0].hash))return
-            const block = await wsProvider.request("ledger_getAccountBlockByHash", result[0].hash)
-            if(!block)return
-            if(block.blockType !== 2)return
-            if(block.amount === "0")return
-            const address = await Address.findOne({
-                address: block.toAddress,
-                network: "VITE"
+    await Promise.all([
+        (async () => {
+            const AccountBlockEvent = await wsProvider.subscribe("createAccountBlockSubscription")
+            AccountBlockEvent.on(async (result) => {
+                try{
+                    if(skipBlocks.includes(result[0].hash))return
+                    const block = await wsProvider.request("ledger_getAccountBlockByHash", result[0].hash)
+                    if(!block)return
+                    if(block.blockType !== 2)return
+                    if(block.amount === "0")return
+                    const address = await Address.findOne({
+                        address: block.toAddress,
+                        network: "VITE"
+                    })
+                    if(!address)return
+                    if(skipBlocks.includes(result[0].hash))return
+                    skipBlocks.push(result[0].hash)
+        
+                    await receive(address, block)
+                    skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
+                }catch(err){
+                    console.error(err)
+                }
             })
-            if(!address)return
-            if(skipBlocks.includes(result[0].hash))return
-            skipBlocks.push(result[0].hash)
-
-            await receive(address, block)
-            skipBlocks.splice(skipBlocks.indexOf(block.hash), 1)
-        }catch(err){
-            console.error(err)
-        }
-    })
+        })(),
+        (async () => {
+            let page = 0
+            const pageSize = 100
+            let tokens = []
+            // eslint-disable-next-line no-constant-condition
+            while(true){
+                const tokensInfo = await wsProvider.request("contract_getTokenInfoList", page, pageSize)
+                page++
+                tokens.push(...tokensInfo.tokenInfoList)
+                if(tokensInfo.tokenInfoList.length != pageSize)break
+            }
+            tokens = tokens.sort((a, b) => a.index-b.index)
+            for(const token of tokens
+                .filter(token => {
+                    if(
+                        tokens.find(e => e.tokenSymbol === token.tokenSymbol)
+                        !== token
+                    )return false
+                    return true
+                })
+            ){
+                if(tokenNames[token.tokenSymbol])continue
+                tokenNames[token.tokenSymbol] = token.tokenName
+                if(tokenIds[token.tokenSymbol])continue
+                tokenIds[token.tokenSymbol] = token.tokenId
+                tokenDecimals[token.tokenSymbol] = token.decimals
+            }
+        })()
+    ])
 })
+
+const cachedPreviousBlocks = new Map<string, {
+    timeout: NodeJS.Timeout,
+    height: number,
+    previousHash: string
+}>()
+
+const VITE_TOKEN = "tti_5649544520544f4b454e6e40"
+const SBP_NAME = "VitaminCoinSBP"
+const skipSBPCheck = new Set<string>()
 
 export async function receive(address:IAddress, block:any){
     // Ok, we received a deposit/tip
@@ -59,37 +101,28 @@ export async function receive(address:IAddress, block:any){
             address: address.address,
             sendBlockHash: block.hash
         })
-        accountBlock.setProvider(wsProvider)
-        .setPrivateKey(keyPair.privateKey)
-        const [
-            quota,
-            difficulty
-        ] = await Promise.all([
-            wsProvider.request("contract_getQuotaByAccount", address.address),
-            accountBlock.autoSetPreviousAccountBlock()
-            .then(() => wsProvider.request("ledger_getPoWDifficulty", {
-                address: accountBlock.address,
-                previousHash: accountBlock.previousHash,
-                blockType: accountBlock.blockType,
-                toAddress: accountBlock.toAddress,
-                data: accountBlock.data
-            })) as Promise<{
-                requiredQuota: string;
-                difficulty: string;
-                qc: string;
-                isCongestion: boolean;
-            }>
-        ])
-        const availableQuota = new BigNumber(quota.currentQuota)
-        if(availableQuota.isLessThan(difficulty.requiredQuota)){
-            await accountBlock.PoW(difficulty.difficulty)
-        }
-        await accountBlock.sign()
-
-        await accountBlock.send()
+        accountBlock.setPrivateKey(keyPair.privateKey)
+        await sendTX(address.address, accountBlock)
     })
 
     viteEvents.emit("receive_"+block.hash)
+
+    if(block.tokenInfo.tokenId === VITE_TOKEN && !skipSBPCheck.has(address.address)){
+        skipSBPCheck.add(address.address)
+        viteQueue.queueAction(address.address, async () => {
+            // lmao vote for Vitamin Coin SBP
+            const sbpData = await wsProvider.request("contract_getVotedSBP", address.address)
+            if(sbpData?.blockProducerName !== SBP_NAME){
+                // we set it as vitamincoin sbp lol
+                const accountBlock = vite.accountBlock.createAccountBlock("voteForSBP", {
+                    address: address.address,
+                    sbpName: SBP_NAME
+                })
+                accountBlock.setPrivateKey(keyPair.privateKey)
+                await sendTX(address.address, accountBlock)
+            }
+        }).catch(console.error)
+    }
 
     // Don't send dm on random coins, for now just tell for registered coins.
     if(!Object.values(tokenIds).includes(block.tokenInfo.tokenId))return
@@ -117,23 +150,20 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
             default: {
                 let mention = "Unknown User"
                 switch(platform){
+                    case "Quota": {
+                        //let's try to resolve the original id
+                        const sender = hashToSender[block.hash]
+                        if(!sender)break
+                        delete hashToSender[block.hash]
+                        const id = sender.split(".")[0]
+                        const user = (await parseDiscordUser(id))[0]
+                        if(user)mention = user.tag
+                        break
+                    }
                     case "Discord": {
-                        let user = (await parseDiscordUser(id))[0]
-                        if(user.id === client.user?.id){
-                            //let's try to resolve the original id
-                            const sender = hashToSender[block.hash]
-                            if(sender){
-                                delete hashToSender[block.hash]
-                                const id = sender.split(".")[0]
-                                const tempUser = (await parseDiscordUser(id))[0]
-                                if(tempUser){
-                                    user = tempUser
-                                }
-                            }
-                        }
-                        if(user){
-                            mention = user.tag
-                        }
+                        const user = (await parseDiscordUser(id))[0]
+                        if(!user)break
+                        mention = user.tag
                         break
                     }
                     case "Faucet":{
@@ -181,9 +211,9 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
     try{
         return await getVITEAddress(id, platform)
     }catch(err){
+        // address doesn't exist in db, create it
         const wallet = vite.wallet.createWallet()
         const addr = wallet.deriveAddress(0)
-        // address doesn't exist in db, create it
         const address = await Address.create({
             network: "VITE",
             seed: wallet.seedHex,
@@ -196,8 +226,9 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
     }
 }
 
+let botAddress:IAddress
 export async function bulkSend(from: IAddress, recipients: string[], amount: string, tokenId: string){
-    const botAddress = await getVITEAddressOrCreateOne(client.user.id, "Discord")
+    if(!botAddress)botAddress = await viteQueue.queueAction("Batch.Quota", () => getVITEAddressOrCreateOne("Batch", "Quota"))
     if(from.paused)throw new Error("Address frozen, please contact an admin.")
     const hash = await sendVITE(from.seed, botAddress.address, new BigNumber(amount).times(recipients.length).toFixed(), tokenId)
     await new Promise(r => {
@@ -239,24 +270,29 @@ export async function rawBulkSend(from: IAddress, recipients: string[], amount: 
     return Promise.all(promises)
 }
 
-export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string):Promise<string>{
-    const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
-    const fromAddress = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
-
-    const accountBlock = vite.accountBlock.createAccountBlock("send", {
-        toAddress: toAddress,
-        address: fromAddress.address,
-        tokenId: tokenId,
-        amount: amount
-    })
+export async function sendTX(address:string, accountBlock:any):Promise<string>{
     accountBlock.setProvider(wsProvider)
-    .setPrivateKey(keyPair.privateKey)
+
     const [
         quota,
         difficulty
     ] = await Promise.all([
-        wsProvider.request("contract_getQuotaByAccount", fromAddress.address),
-        accountBlock.autoSetPreviousAccountBlock()
+        wsProvider.request("contract_getQuotaByAccount", address),
+        (async () => {
+            if(cachedPreviousBlocks.has(address)){
+                const block = cachedPreviousBlocks.get(address)
+                accountBlock.setHeight((block.height).toString())
+                accountBlock.setPreviousHash(block.previousHash)
+            }else{
+                await accountBlock.autoSetPreviousAccountBlock()
+                const block = {
+                    timeout: null,
+                    height: parseInt(accountBlock.height),
+                    previousHash: accountBlock.previousHash
+                }
+                cachedPreviousBlocks.set(address, block)
+            }
+        })()
         .then(() => wsProvider.request("ledger_getPoWDifficulty", {
             address: accountBlock.address,
             previousHash: accountBlock.previousHash,
@@ -276,7 +312,31 @@ export async function sendVITE(seed: string, toAddress: string, amount: string, 
     }
     await accountBlock.sign()
     
-    return (await accountBlock.send()).hash
+    const hash = (await accountBlock.send()).hash
+    const pblock = cachedPreviousBlocks.get(address) || {} as any
+    pblock.height++
+    pblock.previousHash = hash
+    const timeout = pblock.timeout = setTimeout(() => {
+        const block = cachedPreviousBlocks.get(address)
+        if(timeout !== block.timeout)return
+        cachedPreviousBlocks.delete(address)
+    }, 600000)
+    cachedPreviousBlocks.set(address, pblock)
+    return hash
+}
+
+export async function sendVITE(seed: string, toAddress: string, amount: string, tokenId: string):Promise<string>{
+    const keyPair = vite.wallet.deriveKeyPairByIndex(seed, 0)
+    const address = vite.wallet.createAddressByPrivateKey(keyPair.privateKey)
+
+    const accountBlock = vite.accountBlock.createAccountBlock("send", {
+        toAddress: toAddress,
+        address: address.address,
+        tokenId: tokenId,
+        amount: amount
+    })
+    accountBlock.setPrivateKey(keyPair.privateKey)
+    return sendTX(address.address, accountBlock)
 }
 
 export async function getBalances(address: string){
@@ -294,10 +354,23 @@ export async function getBalances(address: string){
     return balances
 }
 
+export async function searchStuckGiveaways(){
+    await wait(10*durationUnits.m)
+    return
+    const addresses = await Address.find({
+        handles: {
+            $regex: /^\d\.Discord\.Giveaway$/
+        }
+    })
+    await asyncPool(25, addresses, async address => {
+        const giveaway = await Giveaway.find
+    })
+}
+
 export async function searchStuckTransactions(){
     const addresses = await Address.find()
     const tokens = Object.values(tokenIds)
-    await asyncPool(25, addresses, async address => {
+    await asyncPool(50, addresses, async address => {
         try{
             // eslint-disable-next-line no-constant-condition
             while(true){
@@ -366,6 +439,13 @@ export async function searchStuckTransactions(){
             // eslint-disable-next-line no-constant-condition
             while(true){
                 await searchStuckTransactions()
+            }
+        })(),
+        (async () => {
+            // Empty stuck giveaways
+            // eslint-disable-next-line no-constant-condition
+            while(true){
+                await searchStuckGiveaways()
             }
         })()
     ])

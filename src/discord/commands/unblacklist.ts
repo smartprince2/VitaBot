@@ -4,7 +4,7 @@ import Command from "../command";
 import discordqueue from "../discordqueue";
 import { parseDiscordUser } from "../util";
 
-export default new class UnblacklistCommand implements Command {
+export default new class UnBlacklistCommand implements Command {
     description = "you shouldn't see this"
     extended_description = `You shouldn't see this.`
     alias = ["unblacklist"]
@@ -21,7 +21,7 @@ export default new class UnblacklistCommand implements Command {
             await message.reply("Please add the id of an user.")
             return
         }
-        const address = await discordqueue.queueAction(id, () => getVITEAddressOrCreateOne(id, "Discord"))
+        const address = await discordqueue.queueAction(id, () => getVITEAddressOrCreateOne(user.id, "Discord"))
         await message.channel.send(`Unblacklisting User: ${user.tag} Address: ${address.address}`)
         if(!address.paused){
             await message.channel.send("That user is not blacklisted.")

@@ -2,7 +2,8 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export interface IActiveStatus extends Document {
     user_id: string,
-    createdAt: Date
+    createdAt: Date,
+    guild_id: string
 }
 
 const ActiveStatusSchema = new Schema<IActiveStatus>({
@@ -13,6 +14,10 @@ const ActiveStatusSchema = new Schema<IActiveStatus>({
     createdAt: {
         type: Date,
         expires: 60*30
+    },
+    guild_id: {
+        type: String,
+        required: true
     }
 })
 

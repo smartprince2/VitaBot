@@ -2,7 +2,7 @@ import { Message } from "discord.js";
 import Command from "../command";
 import { VITC_ADMINS } from "../constants";
 
-export default new class Deposit implements Command {
+export default new class RestartCommand implements Command {
     description = "Restart the bot"
     extended_description = "No need for a description"
     alias = ["restart"]

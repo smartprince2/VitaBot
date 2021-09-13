@@ -12,7 +12,7 @@ import { resolveDuration } from "../../common/util";
 import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import Airdrop from "../../models/Airdrop";
 import { endAirdrop, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
-import { ALLOWED_GUILDS, BOT_OWNER } from "../constants";
+import { BOT_OWNER } from "../constants";
 
 export default new class AirdropCommand implements Command {
     description = "Start a new Airdrop"
@@ -33,7 +33,7 @@ Examples:
             await message.channel.send("That command is limited to Thomiz. Please don't use it.")
             return
         }
-        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
+        if(!message.guildId){
             try{
                 await message.react("❌")
             }catch{}

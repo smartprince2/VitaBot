@@ -10,10 +10,11 @@ export function generateDefaultEmbed(){
     }))
 }
 
-const USER_PATTERN = /^<@!?(?<id>\d{17,19})>$/;
+const USER_PATTERN = /^<@!?(?<id>\d{17,19})>$/
 const ID_PATTERN = /^\d{17,19}$/
+const ROLE_PATTERN = /^<@&?(?<id>\d{17,19})>$/
 export function isDiscordUserArgument(arg: string){
-    return USER_PATTERN.test(arg) || ID_PATTERN.test(arg)
+    return USER_PATTERN.test(arg) || ID_PATTERN.test(arg) || ROLE_PATTERN.test(arg)
 }
 export async function parseDiscordUser(arg: string){
     if(USER_PATTERN.test(arg)){
@@ -28,6 +29,19 @@ export async function parseDiscordUser(arg: string){
         try{
             const user = await client.users.fetch(arg)
             return [user]
+        }catch{
+            return []
+        }
+    }else if(ROLE_PATTERN.test(arg)){
+        const parsed = arg.match(ROLE_PATTERN)
+        try{
+            const guild = client.guilds.cache.find(e => e.roles.cache.has(parsed.groups.id))
+            if(!guild)return []
+            const members = await guild.members.fetch()
+            return members.filter(e => 
+                e.roles.cache.has(parsed.groups.id) && 
+                !e.user.bot
+            ).map(e => e.user)
         }catch{
             return []
         }

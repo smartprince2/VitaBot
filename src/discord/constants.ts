@@ -1,7 +1,6 @@
 
 export const BOT_OWNER = "696481194443014174"
 
-export const ALLOWED_GUILDS = process.env.DISCORD_SERVER_IDS.split(",")
 export const ALLOWED_RAINS_ROLES = process.env.DISCORD_RAIN_ROLES.split(",")
 
 export const VITC_ADMINS = [
@@ -31,6 +30,8 @@ export const VITC_ADMINS = [
     "400552599499177986",
     // imalfect
     "852640730093453372",
+    // Shryder
+    "115114079504433154",
 
     // ispan
     "698806044087943179",
@@ -45,5 +46,7 @@ export const VITC_ADMINS = [
     // YaroslavaWise
     "398394098127732738",
     // TARZAN | WatchDog | IND
-    "709877129134997544"
+    "709877129134997544",
+    // Jayy
+    "765370898076139560"
 ]

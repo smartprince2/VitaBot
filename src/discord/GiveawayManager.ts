@@ -24,7 +24,7 @@ export async function searchGiveaways(){
         const message_id = giveaway.message_id
         if(watchingGiveawayMap.has(message_id))continue
         watchingGiveawayMap.set(message_id, giveaway)
-        giveawayQueue.queueAction("current", async () => {
+        giveawayQueue.queueAction(giveaway.guild_id, async () => {
             const giveaway = await Giveaway.findOne({
                 message_id: message_id
             })
@@ -108,7 +108,7 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
 }
 
 export const giveaway_channels = {
-    "862416292760649768": "862416292760649773 870900472557502474 871022892832407602 871017878802014258 877465940474888212 878373710174773308     872195770076512366".split(" ")
+    "862416292760649768": "862416292760649773 870900472557502474 877465940474888212 878373710174773308 872195770076512366 884088302020481074".split(" ")
 }
 
 export async function startGiveaway(giveaway:IGiveaway){
@@ -169,6 +169,9 @@ export async function endGiveaway(giveaway:IGiveaway){
                 return getVITEAddressOrCreateOne(winningEntry.user_id, "Discord")
             })
         ])
+        try{
+            await refreshBotEmbed(giveaway)
+        }catch{}
         await viteQueue.queueAction(address.address, async () => {
             const balances = await getBalances(address.address)
             const tokenIds = Object.keys(balances)
@@ -182,16 +185,12 @@ export async function endGiveaway(giveaway:IGiveaway){
                     token
                 )
                 hashes.push(hash)
-                if(tokenIds[0])await wait(10000)
             }
         })
         const channel = client.channels.cache.get(giveaway.channel_id) as TextChannel
         if(!channel){
             throw new GiveawayError(`Couldn't find the corresponding channel. Ask the admins to unlock Giveaway ${giveaway.message_id}'s funds.`)
         }
-        try{
-            await refreshBotEmbed(giveaway)
-        }catch{}
         const winner = await GiveawayWinner.create({
             message_id: giveaway.message_id,
             user_id: winningEntry.user_id,

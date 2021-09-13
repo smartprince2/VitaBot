@@ -8,9 +8,9 @@ import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 
-export default new class Tip implements Command {
+export default new class WithdrawCommand implements Command {
     description = "Withdraw the funds on the tipbot"
     extended_description = `Withdraw your money to a personnal wallet.
 
@@ -54,7 +54,7 @@ Examples:
                 currencyOrRecipient = currencyOrRecipient.toLowerCase()
             }else{
                 const embed = generateDefaultEmbed()
-                .setDescription(`The token ${currencyOrRecipient} isn't supported. Use the command ${process.env.DISCORD_PREFIX}lstokens to see a list of supported tokens.`)
+                .setDescription(`The token ${currencyOrRecipient} isn't supported.`)
                 await message.channel.send({
                     embeds: [embed]
                 })

@@ -4,7 +4,7 @@ import Command from "../command";
 import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 
-export default new class Toptippers implements Command {
+export default new class TopTippersCommand implements Command {
     description = "See the bot's top tippers"
     extended_description = `Display a list of the best tippers.
 

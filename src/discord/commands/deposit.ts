@@ -5,7 +5,7 @@ import discordqueue from "../discordqueue";
 import { generateDefaultEmbed } from "../util";
 import * as qrcode from "qrcode"
 
-export default new class Deposit implements Command {
+export default new class DepositCommand implements Command {
     description = "Get your deposit address"
     extended_description = "Retrieve your deposit address."
     alias = ["deposit"]

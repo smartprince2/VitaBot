@@ -13,7 +13,7 @@ import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
 import { getActiveUsers } from "../ActiviaManager";
 
-export default new class Random implements Command {
+export default new class RandomTipCommand implements Command {
     description = "Tip one random person amongst active users"
     extended_description = `Tip one random person amongst active users. 
 If they don't have an account on the tipbot, it will create one for them.
@@ -25,11 +25,8 @@ Examples:
     alias = ["vr", "vrandom", "random"]
     usage = "<amount>"
 
-    allowedGuilds = process.env.DISCORD_SERVER_IDS.split(",")
-    allowedRoles = process.env.DISCORD_RAIN_ROLES.split(",")
-
     async execute(message:Message, args: string[], command: string){
-        if(!message.guild || !this.allowedGuilds.includes(message.guild.id)){
+        if(!message.guild){
             try{
                 await message.react("❌")
             }catch{}
@@ -53,7 +50,7 @@ Examples:
             )
             return
         }
-        const userList = (await getActiveUsers())
+        const userList = (await getActiveUsers(message.guildId))
             .filter(e => e !== message.author.id)
         if(userList.length < 2){
             await message.reply(`There are less than 2 active users. Cannot random tip. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")||"empty"}`)

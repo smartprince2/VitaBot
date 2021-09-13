@@ -1,4 +1,4 @@
-import { Message } from "discord.js";
+import { Message, VoiceChannel } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { bulkSend, getBalances, getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
@@ -10,19 +10,19 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
-import { getActiveUsers } from "../ActiviaManager";
+import { ALLOWED_RAINS_ROLES, VITC_ADMINS } from "../constants";
 
-export default new class RainCommand implements Command {
-    description = "Tip active users"
-    extended_description = `Tip active users. 
+export default new class VoiceRain implements Command {
+    description = "Tip users in your voice channel."
+    extended_description = `Tip users in your voice channel.
 If they don't have an account on the tipbot, it will create one for them.
 **The minimum amount to rain is 100 ${tokenNameToDisplayName("VITC")}**
 
 Examples:
-**Rain 1000 ${tokenNameToDisplayName("VITC")} !**
-.vrain 1000`
+**Rain 1000 ${tokenNameToDisplayName("VITC")} in the voice chat!**
+.rainhere 1000`
 
-    alias = ["vrain", "rain", "vitaminrain"]
+    alias = ["vrainhere", "voicerain", "rainhere"]
     usage = "<amount>"
 
     async execute(message:Message, args: string[], command: string){
@@ -42,8 +42,28 @@ Examples:
             await message.reply("The minimum amount to rain is 100 VITC.")
             return
         }
-        const userList = (await getActiveUsers(message.guildId))
-            .filter(e => e !== message.author.id)
+        let voiceChannel = message.member.voice?.channel
+        if(!voiceChannel){
+            await message.reply("You aren't in a voice chat. Please join one first.")
+            return
+        }
+        voiceChannel = (await voiceChannel.fetch()) as VoiceChannel
+        const userList = voiceChannel.members
+        .filter(e => {
+            return !e.user.bot && 
+                e.id !== message.author.id &&
+                !VITC_ADMINS.includes(e.id) && 
+                !e.voice?.deaf &&
+                (() => {
+                    for(const roleId of ALLOWED_RAINS_ROLES){
+                        if(message.member.roles.cache.has(roleId)){
+                            return true
+                        }
+                    }
+                    return false
+                })()
+        })
+        .map(e => e.id)
         if(userList.length < 2){
             await message.reply(`There are less than 2 active users. Cannot rain. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")}`)
             return

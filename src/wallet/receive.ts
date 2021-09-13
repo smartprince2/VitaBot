@@ -1,10 +1,9 @@
 import Address, { IAddress } from "../models/Address"
 import { wsProvider } from "./node"
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import viteQueue from "./viteQueue"
 import BigNumber from "bignumber.js"
 import events from "./events"
-import { wait } from "../common/util"
 import { PoWDone, waitPoW } from "./powQueue"
 
 const skipBlocks = new Set()

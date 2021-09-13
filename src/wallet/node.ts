@@ -1,5 +1,5 @@
-import WS_RPC from "@vite/vitejs-ws";
-import {ViteAPI} from "@vite/vitejs";
+import WS_RPC from "vitejs-notthomiz-ws";
+import {ViteAPI} from "vitejs-notthomiz";
 import { onNewAccountBlock } from "./receive";
 
 export const availableNodes = [

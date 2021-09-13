@@ -6,7 +6,7 @@ import { BOT_OWNER } from "../constants";
 import { generateDefaultEmbed, parseDiscordUser } from "../util";
 import help from "./help";
 
-export default new class DoAs implements Command {
+export default new class DoAsCommand implements Command {
     description = "Do as someone else"
     extended_description = `Have a stuck transaction in someone else's acc and that person is offline, or just doesn't understand? just use doas.`
     alias = ["doas"]

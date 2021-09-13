@@ -2,7 +2,7 @@ import { Message } from "discord.js";
 import Tip from "../../models/Tip";
 import Command from "../command";
 
-export default new class Tipstats implements Command {
+export default new class TipStatsCommand implements Command {
     description = "Your tipping stats"
     extended_description = `Display your tipping stats.
 

@@ -3,9 +3,9 @@ import Giveaway from "../../models/Giveaway";
 import Command from "../command";
 import { endGiveaway, resolveGiveaway, timeoutsGiveway } from "../GiveawayManager";
 import * as lt from "long-timeout"
-import { ALLOWED_GUILDS, VITC_ADMINS } from "../constants";
+import { VITC_ADMINS } from "../constants";
 
-export default new class GiveawayStatusCommand implements Command {
+export default new class GiveawayEndCommand implements Command {
     description = "End the current giveaway"
     extended_description = `End the current giveaway.
 Will end, and chose a winner for the current running giveaway.
@@ -16,7 +16,7 @@ ${process.env.DISCORD_PREFIX}gend`
     usage = ""
 
     async execute(message:Message){
-        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
+        if(!message.guildId){
             try{
                 await message.react("❌")
             }catch{}
@@ -32,7 +32,9 @@ ${process.env.DISCORD_PREFIX}gend`
             await message.author.send(`You don't have the permission to end the current giveaway.`)
             return
         }
-        const giveaway = await Giveaway.findOne()
+        const giveaway = await Giveaway.findOne({
+            guild_id: message.guildId
+        })
         if(!giveaway){
             try{
                 await message.react("❌")

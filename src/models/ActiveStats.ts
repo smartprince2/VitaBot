@@ -4,7 +4,8 @@ export interface IActiveStats extends Document {
     user_id: string,
     message_id: string,
     createdAt: Date,
-    num: number
+    num: number,
+    guild_id: string
 }
 
 const ActiveSchema = new Schema<IActiveStats>({
@@ -16,6 +17,10 @@ const ActiveSchema = new Schema<IActiveStats>({
         type: String,
         required: true,
         unique: true
+    },
+    guild_id: {
+        type: String,
+        required: true
     },
     createdAt: {
         type: Date, 

@@ -8,6 +8,7 @@ export async function waitPoW(address: string){
 }
 
 export function PoWDone(address:string){
+    return
     powWaitingList.set(address, wait(10000).then(() => {
         powWaitingList.delete(address)
     }))

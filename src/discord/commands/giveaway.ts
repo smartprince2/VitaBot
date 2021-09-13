@@ -14,7 +14,7 @@ import { throwFrozenAccountError } from "../util";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import { endGiveaway, giveawayQueue, resolveGiveaway, startGiveaway, timeoutsGiveway, watchingGiveawayMap } from "../GiveawayManager";
 import Tip from "../../models/Tip";
-import { ALLOWED_GUILDS } from "../constants";
+import { ALLOWED_RAINS_ROLES } from "../constants";
 
 export default new class GiveawayCommand implements Command {
     description = "Start a new giveaway"
@@ -29,11 +29,24 @@ Examples:
     usage = "<amount> <duration> {fee}"
 
     async execute(message:Message, args: string[], command: string){
-        if(!message.guildId || !ALLOWED_GUILDS.includes(message.guildId)){
+        if(!message.guildId){
             try{
                 await message.react("❌")
             }catch{}
             return
+        }
+        let hasRole = false
+        for(const roleId of ALLOWED_RAINS_ROLES){
+            if(message.member.roles.cache.has(roleId)){
+                hasRole = true
+                break
+            }
+        }
+        if(!hasRole){
+            try{
+                await message.react("❌")
+                await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
+            }catch{}
         }
         const [
             amount,
@@ -190,7 +203,7 @@ Examples:
             })
             const message_id = message.id
             watchingGiveawayMap.set(message_id, giveaway)
-            await giveawayQueue.queueAction(giveaway.channel_id, async () => {
+            await giveawayQueue.queueAction(giveaway.guild_id, async () => {
                 const giveaway = await Giveaway.findOne({
                     message_id: message_id
                 })

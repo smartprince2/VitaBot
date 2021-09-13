@@ -6,7 +6,7 @@ export type Networks = "VITE"
 export type Platform = "Discord" | "Twitter" | "Reddit" | 
     "Discord.Giveaway" | "Twitter.Giveaway" | "Reddit.Giveaway" | 
     "Discord.Airdrop" | "Twitter.Airdrop" | "Reddit.Airdrop" | 
-    "Faucet"
+    "Faucet" | "Quota"
 
 export const tokenIds = {
     VITE: "tti_5649544520544f4b454e6e40",
@@ -19,3 +19,31 @@ export const tokenIds = {
     XMR: "tti_e5750d3c5b3bb5a31b8ba637",
     ETH: "tti_687d8a93915393b219212c73"
 }
+
+export const tokenDecimals = {
+    VITE: 18,
+    VITC: 18,
+    BAN: 29,
+    NANO: 30,
+    BTC: 8,
+    VX: 18,
+    VCP: 0,
+    XMR: 12,
+    ETH: 18
+}
+
+export const tokenNames = {
+    VITE: "Vite",
+    VITC: "Vitamin Coin 💊",
+    BAN: "Banano 🍌",
+    NANO: "Nano"
+}
+
+// https://i.imgur.com/1hYUMmF.png
+export const VITABOT_SPLASH = ` ___      ___ ___  _________  ________  ________  ________  _________   
+|\\  \\    /  /|\\  \\|\\___   ___\\\\   __  \\|\\   __  \\|\\   __  \\|\\___   ___\\ 
+\\ \\  \\  /  / | \\  \\|___ \\  \\_\\ \\  \\|\\  \\ \\  \\|\\ /\\ \\  \\|\\  \\|___ \\  \\_| 
+ \\ \\  \\/  / / \\ \\  \\   \\ \\  \\ \\ \\   __  \\ \\   __  \\ \\  \\\\\\  \\   \\ \\  \\  
+  \\ \\    / /   \\ \\  \\   \\ \\  \\ \\ \\  \\ \\  \\ \\  \\|\\  \\ \\  \\\\\\  \\   \\ \\  \\ 
+   \\ \\__/ /     \\ \\__\\   \\ \\__\\ \\ \\__\\ \\__\\ \\_______\\ \\_______\\   \\ \\__\\
+    \\|__|/       \\|__|    \\|__|  \\|__|\\|__|\\|_______|\\|_______|    \\|__|`
