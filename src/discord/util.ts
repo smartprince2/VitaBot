@@ -19,7 +19,15 @@ export function isDiscordUserArgument(arg: string){
     return USER_PATTERN_MULTI.test(arg) || ID_PATTERN.test(arg) || ROLE_PATTERN_MULTI.test(arg)
 }
 export async function parseDiscordUser(arg: string){
-    if(USER_PATTERN_MULTI.test(arg)){
+    if(USER_PATTERN.test(arg)){
+        const parsed = arg.match(USER_PATTERN)
+        try{
+            const user = await client.users.fetch(parsed.groups.id)
+            return [user]
+        }catch{
+            return []
+        }
+    }else if(USER_PATTERN_MULTI.test(arg)){
         const matches = arg.match(USER_PATTERN_MULTI)
         const ids:string[] = []
         for(const match of matches){
@@ -38,6 +46,19 @@ export async function parseDiscordUser(arg: string){
             return []
         }
     }else if(ROLE_PATTERN.test(arg)){
+        const parsed = arg.match(ROLE_PATTERN)
+        try{
+            const guild = client.guilds.cache.find(e => e.roles.cache.has(parsed.groups.id))
+            if(!guild)return []
+            const members = await guild.members.fetch()
+            return members.filter(e => 
+                e.roles.cache.has(parsed.groups.id) && 
+                !e.user.bot
+            ).map(e => e.user)
+        }catch{
+            return []
+        }
+    }else if(ROLE_PATTERN_MULTI.test(arg)){
         const matches = arg.match(ROLE_PATTERN_MULTI)
         const ids:string[] = []
         for(const match of matches){

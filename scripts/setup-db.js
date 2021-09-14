@@ -46,7 +46,7 @@ const inquirer = require("inquirer")
                 const addr = wallet.deriveAddress(0)
                 botAddress = await Address.create({
                     network: "VITE",
-                    seed: wallet.seedhex,
+                    seed: wallet.seedHex,
                     address: addr.address,
                     handles: [
                         "Batch.Quota"
@@ -58,6 +58,35 @@ const inquirer = require("inquirer")
             }
             await inquirerQueue.queueAction("", async () => {
                 console.log("Please stake quota to \x1b[33m"+botAddress.address+"\x1b[37m")
+            })
+        })(),
+        (async () => {
+            let SBPRewardsAddress = await Address.findOne({
+                handles: "SBP.Rewards"
+            })
+            if(!SBPRewardsAddress){
+                await inquirerQueue.queueAction("", async () => {
+                    console.info("Creating SBP Rewards address...")
+                })
+                const wallet = vite.wallet.createWallet()
+                const addr = wallet.deriveAddress(0)
+                SBPRewardsAddress = await Address.create({
+                    network: "VITE",
+                    seed: wallet.seedHex,
+                    address: addr.address,
+                    handles: [
+                        "SBP.Rewards"
+                    ]
+                })
+                await inquirerQueue.queueAction("", async () => {
+                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m")
+                })
+                await inquirerQueue.queueAction("", async () => {
+                    console.log("SBP Rewards created!")
+                })
+            }
+            await inquirerQueue.queueAction("", async () => {
+                console.log("Please use this address to claim SBP rewards: \x1b[33m"+SBPRewardsAddress.address+"\x1b[37m")
             })
         })(),
         (async () => {
