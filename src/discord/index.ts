@@ -27,7 +27,13 @@ export const client = new Discord.Client({
         "GUILD_MEMBER",
         "REACTION",
         "CHANNEL"
-    ]
+    ],
+    presence: {
+        activities: [{
+            name: "Popping pills 💊",
+            type: "PLAYING"
+        }]
+    }
 })
 
 export const commands = new Collection<string, Command>()
@@ -36,10 +42,6 @@ let botRegexp:RegExp = null
 
 client.on("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`)
-    client.user.setActivity({
-        name: "Popping pills 💊",
-        type: "PLAYING"
-    })
 
     botRegexp = new RegExp("^<@!?"+client.user.id+">$")
 
