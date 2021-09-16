@@ -29,8 +29,8 @@ specifiers:
   node-fetch: ^2.6.1
   qrcode: ^1.4.4
   tiny-async-pool: ^1.2.0
-  twit: ^2.2.11
   twitter: ^1.7.1
+  twitter-api-v2: ^1.5.1
   typescript: ^4.3.5
   utf-8-validate: ^5.0.5
   vitejs-notthomiz: ^2.3.15
@@ -55,8 +55,8 @@ dependencies:
   node-fetch: 2.6.1
   qrcode: 1.4.4
   tiny-async-pool: 1.2.0
-  twit: 2.2.11
   twitter: 1.7.1
+  twitter-api-v2: 1.5.1
   vitejs-notthomiz: 2.3.15
   vitejs-notthomiz-ws: 2.3.15
   ws: 8.2.1_72ef9f06cb99540da679cbf1bf7a3256
@@ -2748,13 +2748,8 @@ packages:
     resolution: {integrity: sha1-WuaBd/GS1EViadEIr6k/+HQ/T2Q=}
     dev: false
 
-  /twit/2.2.11:
-    resolution: {integrity: sha512-BkdwvZGRVoUTcEBp0zuocuqfih4LB+kEFUWkWJOVBg6pAE9Ebv9vmsYTTrfXleZGf45Bj5H3A1/O9YhF2uSYNg==}
-    engines: {node: '>=0.10.0'}
-    dependencies:
-      bluebird: 3.5.1
-      mime: 1.6.0
-      request: 2.88.2
+  /twitter-api-v2/1.5.1:
+    resolution: {integrity: sha512-7bFgf1uM/3PbH2Z8YJyt1QGMTQQa4CFEDHDd3Mr0rTfB7A8DBpLrtWlgSeG0NsRG2UKWLFxT6XEIi2Qc69u1+w==}
     dev: false
 
   /twitter/1.7.1:
