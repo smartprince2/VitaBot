@@ -1,8 +1,8 @@
-import { Tweet } from "..";
+import { createDM, Tweet } from "..";
 import Command from "../command";
 
 export default new class Balance implements Command {
-    public = false
+    public = true
     dm = true
     description = "Display your balance"
     extended_description = `Display your current balance`
@@ -10,6 +10,7 @@ export default new class Balance implements Command {
     usage = ""
 
     async execute(data:Tweet, args:string[], command:string){
-        
+        console.log(data)
+        await createDM(data.user.id_str, "henlo")
     }
 }

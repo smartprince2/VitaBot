@@ -1,18 +1,18 @@
 import "../common/load-env"
 import { dbPromise } from "../common/load-db"
-import Twit from "twit"
+import Twit from "twitter-api-v2"
 import Twitter from "twitter"
 import Command from "./command"
 import {promises as fs} from "fs"
 import {join} from "path"
 
-export const clientv2 = new Twit({
-    consumer_key: process.env.TWITTER_API_KEY,
-    consumer_secret: process.env.TWITTER_API_SECRET,
-    access_token: process.env.TWITTER_ACCESS_TOKEN,
-    access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+export const twitc = new Twit({
+    appKey: process.env.TWITTER_API_KEY,
+    appSecret: process.env.TWITTER_API_SECRET,
+    accessToken: process.env.TWITTER_ACCESS_TOKEN,
+    accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 })
-export const clientv1 = new Twitter({
+export const client = new Twitter({
     consumer_key: process.env.TWITTER_API_KEY,
     consumer_secret: process.env.TWITTER_API_SECRET,
     access_token_key: process.env.TWITTER_ACCESS_TOKEN,
@@ -24,7 +24,7 @@ export const rawCommands = [] as Command[]
 
 export function replyTweet(reply_to: string, text: string){
     return new Promise<Tweet>((resolve, reject) => {
-        clientv1.post("statuses/update", {
+        client.post("statuses/update", {
             status: text,
             in_reply_to_status_id: reply_to
         }, (error, data: any) => {
@@ -39,7 +39,7 @@ export function replyTweet(reply_to: string, text: string){
 
 // Broken typing on this because this payload won't work with normal Twitter, and needs twitc
 export async function createDM(recipient_id: string, text: string):Promise<any>{
-    return clientv2.v1.sendDm({
+    return twitc.v1.sendDm({
         recipient_id: recipient_id,
         text: text
     })
@@ -139,8 +139,9 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
     
     await dbPromise
 
-	const stream = clientv1.stream("statuses/filter", {track: mention.slice(1)})
+	const stream = client.stream("statuses/filter", {track: mention.slice(1)})
     stream.on("data", async tweet => {
+        console.log(tweet.text)
         let args = tweet.text.split(/ +/g)
         const mentionIndex = args.indexOf(mention)
         // not mentionned.
