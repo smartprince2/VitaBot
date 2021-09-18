@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { tokenIds } from "../../common/constants";
+import { tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -25,7 +25,7 @@ export default new class BalanceCommand implements Command {
         const embed = generateDefaultEmbed()
         .setAuthor("View on vitescan.io", undefined, `https://vitescan.io/address/${address.address}`)
         .setDescription(Object.keys(balances).map(tokenId => {
-            const displayToken = Object.entries(tokenIds).find(e => e[1] === tokenId)?.[0] || tokenId
+            const displayToken = tokenTickers[tokenId] || tokenId
             const displayBalance = convert(balances[tokenId], "RAW", displayToken as any)
 
             return `[**${tokenNameToDisplayName(displayToken)}**](https://vitescan.io/token/${tokenId}): ${displayBalance}`

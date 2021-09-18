@@ -1,9 +1,8 @@
 import BigNumber from "bignumber.js"
-import { tokenDecimals, tokenIds, tokenNames } from "./constants"
+import { tokenDecimals, tokenNames, tokenTickers } from "./constants"
 
 export function tokenIdToName(tokenId:string){
-    const entries = Object.entries(tokenIds)
-    return entries.find(e => e[1] === tokenId)?.[0]
+    return tokenTickers[tokenId]
 }
 
 export function convert(amount: string|BigNumber|number, base_unit: string, unit: string){

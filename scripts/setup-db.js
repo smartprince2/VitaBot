@@ -11,7 +11,6 @@ const Address = require("../dist/models/Address").default
 const BotSettings = require("../dist/models/BotSettings").default
 const ActionQueue = require("../dist/common/queue").default
 const { Client, Team } = require("discord.js")
-const inquirer = require("inquirer")
 
 ;(async () => {
     console.info("Setting up database... Connecting and logging on Discord...")

@@ -148,6 +148,14 @@ async function registerEvents(){
     ])
 }
 
+export async function fetchAccountBlocks(address:string, hash:string, tokenId:string, limit:number){
+    return wsProvider.request("ledger_getAccountBlocks", address, hash, tokenId, limit)
+}
+
+export async function fetchAccountBlock(hash:string){
+    return wsProvider.request("ledger_getAccountBlockByHash", hash)
+}
+
 export async function getVotedSBP(address:string):Promise<{
     blockProducerName: string,
     status: number,

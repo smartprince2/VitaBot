@@ -39,7 +39,7 @@ ${process.env.DISCORD_PREFIX}do 10`
         const amount = new BigNumber(amountRaw)
         if(currencyRaw)currency = currencyRaw
         currency = currency.toUpperCase()
-        if(!Object.keys(tokenIds).includes(currency)){
+        if(!(currency in tokenIds)){
             try{
                 await message.react("❌")
             }catch{}

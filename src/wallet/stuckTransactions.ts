@@ -1,5 +1,5 @@
 import Address from "../models/Address"
-import { tokenIds, wsProvider } from "./node"
+import { wsProvider, tokenTickers } from "./node"
 import asyncPool from "tiny-async-pool";
 import { wait } from "../common/util";
 import { receive, skipReceiveBlocks } from "./receive";
@@ -12,7 +12,7 @@ export default async function initStuckTransactionService():Promise<never>{
 }
 export async function searchStuckTransactions(){
     const addresses = await Address.find()
-    const tokens = Object.values(tokenIds)
+    const tokens = Object.keys(tokenTickers)
     await asyncPool(50, addresses, async address => {
         try{
             // eslint-disable-next-line no-constant-condition

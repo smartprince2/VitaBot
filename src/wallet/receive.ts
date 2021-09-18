@@ -16,7 +16,7 @@ export async function onNewAccountBlock(hash: string){
         await (async () => {
             const block = await wsProvider.request("ledger_getAccountBlockByHash", hash)
             if(!block)return
-            if(block.blockType !== 2)return
+            if(![2,3,6].includes(block.blockType))return
             switch(block.toAddress){
                 case CONSENSUS_CONTRACT_ADDRESS: {
                     await onConsensusContractTransaction(block)

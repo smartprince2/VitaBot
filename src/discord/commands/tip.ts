@@ -56,7 +56,7 @@ Examples:
             }
         }
 
-        if(!Object.keys(tokenIds).includes(currencyOrRecipient)){
+        if(!(currencyOrRecipient in tokenIds)){
             try{
                 await message.react("❌")
             }catch{}

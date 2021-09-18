@@ -49,7 +49,7 @@ Examples:
         let isRawTokenId = false
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
 
-        if(!Object.keys(tokenIds).includes(currencyOrRecipient)){
+        if(!(currencyOrRecipient in tokenIds)){
             if(vite.utils.isValidTokenId(currencyOrRecipient.toLowerCase())){
                 isRawTokenId = true
                 currencyOrRecipient = currencyOrRecipient.toLowerCase()

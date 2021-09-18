@@ -4,32 +4,41 @@ import * as vite from "vitejs-notthomiz";
 import { client } from "../discord";
 import { convert, tokenNameToDisplayName } from "../common/convert";
 import { parseDiscordUser } from "../discord/util";
-import { durationUnits, wait } from "../common/util";
+import { durationUnits } from "../common/util";
 import asyncPool from "tiny-async-pool";
 import Giveaway from "../models/Giveaway";
 import { WebsocketConnection } from "../libwallet/ws";
 import { GetTokenResponse, requestWallet } from "../libwallet/http";
-import { ReceiveTransaction } from "../wallet/events";
+import lt from "long-timeout"
+import GiveawayWinner from "../models/GiveawayWinner";
 
 const hashToSender = {}
 
 export const walletConnection = new WebsocketConnection()
 
-export async function receive(address:IAddress, block:ReceiveTransaction){
-    // Don't send dm on random coins, for now just tell for registered coins.
-    if(!(block.token_id in tokenTickers))return
+walletConnection.on("tx", async transaction => {
+    if(transaction.type !== "receive")return
     
-    const tokenName = Object.entries(tokenIds).find(e => e[1] === block.token_id)[0]
+    const address = await Address.findOne({
+        address: transaction.to
+    })
+    // shouldn't happen but
+    if(!address)return
+
+    // Don't send dm on random coins, for now just tell for registered coins.
+    if(!(transaction.token_id in tokenTickers))return
+    
+    const tokenName = tokenTickers[transaction.token_id]
     const displayNumber = convert(
-        block.amount, 
+        transaction.amount, 
         "RAW", 
         tokenName
     )
     let text = `
 
-View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
+View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
     const sendingAddress = await Address.findOne({
-        address: block.from,
+        address: transaction.from,
         network: "VITE"
     })
     if(sendingAddress){
@@ -44,9 +53,9 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
                 switch(platform){
                     case "Quota": {
                         //let's try to resolve the original id
-                        const sender = hashToSender[block.hash]
+                        const sender = hashToSender[transaction.hash]
                         if(!sender)break
-                        delete hashToSender[block.hash]
+                        delete hashToSender[transaction.hash]
                         const id = sender.split(".")[0]
                         const user = (await parseDiscordUser(id))[0]
                         if(user)mention = user.tag
@@ -88,7 +97,7 @@ View transaction on vitescan: https://vitescan.io/tx/${block.hash}`
             }
         }
     }
-}
+})
 
 export async function getVITEAddress(id:string, platform:Platform):Promise<IAddress>{
     const address = await Address.findOne({
@@ -119,22 +128,73 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
 }
 
 export async function searchStuckGiveaways(){
-    await wait(10*durationUnits.m)
-    return
     const addresses = await Address.find({
         handles: {
-            $regex: /^\d\.Discord\.Giveaway$/
+            $regex: "^\\d+\\.Discord\\.Giveaway$"
         }
     })
     await asyncPool(25, addresses, async address => {
-        const giveaway = await Giveaway.find
+        const mess_id = address.handles[0].split(".")[0]
+        const giveaway = await Giveaway.findOne({
+            message_id: mess_id
+        })
+        if(giveaway)return
+
+        const balances = await requestWallet("get_balances", address.address)
+        const tokens = []
+        for(const tokenId in balances){
+            if(balances[tokenId] === "0")continue
+            tokens.push(tokenId)
+        }
+        if(tokens.length === 0)return
+        const winner = await GiveawayWinner.findOne({
+            message_id: mess_id
+        })
+        let recipient = null
+        if(!winner){
+            // try to find the recipient address
+            // by looking at send blocks
+            const blocks = await requestWallet(
+                "get_account_blocks",
+                address.address,
+                null,
+                null,
+                100
+            )
+            for(const block of blocks){
+                // send block
+                if(block.blockType !== 2)continue
+
+                recipient = block.toAddress
+                break
+            }
+            if(!recipient){
+                console.warn(`Stuck giveaway account: ${address.address}`)
+                return
+            }
+        }else{
+            recipient = (await getVITEAddressOrCreateOne(winner.user_id, "Discord")).address
+        }
+        // we got the funds and the recipient, send it
+        for(const token of tokens){
+            await requestWallet(
+                "send",
+                address.address,
+                recipient, 
+                balances[token],
+                token
+            )
+        }
+    })
+    await new Promise((resolve) => {
+        lt.setTimeout(resolve, durationUnits.d)
     })
 }
 
 (async () => {
     await walletConnection.connect()
     const tokens:GetTokenResponse = await requestWallet("get_tokens")
-    
+
     for(const ticker in tokens.token_decimals){
         tokenDecimals[ticker] = tokens.token_decimals[ticker]
     }
