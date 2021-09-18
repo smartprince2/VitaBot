@@ -1,13 +1,14 @@
 import { client } from "."
 import { tokenIds } from "../common/constants"
 import * as lt from "long-timeout"
-import { bulkSend, getVITEAddressOrCreateOne, sendVITE } from "../cryptocurrencies/vite"
+import { getVITEAddressOrCreateOne } from "../cryptocurrencies/vite"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import Airdrop, { IAirdrop } from "../models/Airdrop"
 import discordqueue from "./discordqueue"
 import { TextChannel } from "discord.js"
 import { convert } from "../common/convert"
 import BigNumber from "bignumber.js"
+import { requestWallet } from "../libwallet/http"
 
 export const watchingAirdropMap = new Map<string, IAirdrop>()
 export const timeoutsAirdrop = new Map<string, lt.Timeout>()
@@ -88,10 +89,13 @@ Currently: distributing rewards. Please wait...`)
         })
         try{
             await viteQueue.queueAction(airdropLockAddress.address, async () => {
-                await bulkSend(
-                    airdropLockAddress, 
-                    recipients.map(e => e.address), 
-                    individualAmount, 
+                await requestWallet(
+                    "bulk_send",
+                    airdropLockAddress.address, 
+                    recipients.map(e => [
+                        e.address,
+                        individualAmount
+                    ]),
                     tokenIds.VITC
                 )
             })
@@ -125,8 +129,9 @@ export async function refundAirdrop(airdrop:IAirdrop){
     })
 
     await viteQueue.queueAction(airdropLockAddress.address, async () => {
-        await sendVITE(
-            airdropLockAddress.seed, 
+        await requestWallet(
+            "send",
+            airdropLockAddress.address, 
             address.address, 
             airdrop.amount, 
             tokenIds.VITC

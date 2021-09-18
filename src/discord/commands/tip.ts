@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { bulkSend, getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { isDiscordUserArgument, parseDiscordUser, throwFrozenAccountError } from "../util";
@@ -10,6 +10,7 @@ import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Tip from "../../models/Tip";
 import { BOT_OWNER } from "../constants";
+import { BulkSendResponse, requestWallet } from "../../libwallet/http";
 
 export default new class TipCommand implements Command {
     description = "Tip someone on Discord"
@@ -134,7 +135,7 @@ Examples:
             try{
                 await message.react("💊")
             }catch{}
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW").split(".")[0])
@@ -148,57 +149,55 @@ Examples:
                 return
             }
             if(addresses.length > 1){
-                const hashes = await bulkSend(
-                    address, 
-                    addresses.map(e => e.address), 
-                    convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
+                const amount = convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0]
+                const txs:BulkSendResponse = await requestWallet(
+                    "bulk_send",
+                    address.address, 
+                    addresses.map(e => [
+                        e.address,
+                        amount
+                    ]), 
                     token
                 )
                 if(currencyOrRecipient === "VITC"){
                     const promises = []
-                    for(const hash of hashes[1]){
+                    for(const tx of txs[1]){
                         promises.push(Tip.create({
                             amount: parseFloat(
                                 convert(
-                                    convert(
-                                        amountParsed, 
-                                        "VITC", 
-                                        "RAW"
-                                    ).split(".")[0], 
+                                    amount, 
                                     "RAW", 
                                     "VITC"
                                 )
                             ),
                             user_id: message.author.id,
                             date: new Date(),
-                            txhash: hash
+                            txhash: tx.hash
                         }))
                     }
                     await Promise.all(promises)
                 }
             }else{
-                const hash = await sendVITE(
-                    address.seed, 
+                const amount = convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0]
+                const tx = await requestWallet(
+                    "send",
+                    address.address, 
                     addresses[0].address, 
-                    convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0], 
+                    amount, 
                     token
                 )
                 if(currencyOrRecipient === "VITC"){
                     await Tip.create({
                         amount: parseFloat(
                             convert(
-                                convert(
-                                    amountParsed, 
-                                    "VITC", 
-                                    "RAW"
-                                ).split(".")[0], 
+                                amount, 
                                 "RAW", 
                                 "VITC"
                             )
                         ),
                         user_id: message.author.id,
                         date: new Date(),
-                        txhash: hash
+                        txhash: tx.hash
                     })
                 }
             }

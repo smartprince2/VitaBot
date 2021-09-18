@@ -1,7 +1,7 @@
 import { client } from "."
 import * as lt from "long-timeout"
-import { randomFromArray, wait } from "../common/util"
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../cryptocurrencies/vite"
+import { randomFromArray } from "../common/util"
+import { getVITEAddressOrCreateOne } from "../cryptocurrencies/vite"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import discordqueue from "./discordqueue"
 import { TextChannel } from "discord.js"
@@ -11,6 +11,7 @@ import ActionQueue from "../common/queue"
 import { generateDefaultEmbed } from "./util"
 import GiveawayEntry from "../models/GiveawayEntry"
 import GiveawayWinner from "../models/GiveawayWinner"
+import { requestWallet } from "../libwallet/http"
 
 export const watchingGiveawayMap = new Map<string, IGiveaway>()
 export const timeoutsGiveway = new Map<string, lt.Timeout>()
@@ -61,7 +62,7 @@ export async function getGiveawayEmbed(giveaway:IGiveaway){
         return getVITEAddressOrCreateOne(giveaway.message_id, "Discord.Giveaway")
     })
     const balances = await viteQueue.queueAction(giveawayLockAccount.address, async () => {
-        return getBalances(giveawayLockAccount.address)
+        return requestWallet("get_balances", giveawayLockAccount.address)
     })
     const endTime = Math.floor((giveaway.creation_date.getTime()+giveaway.duration)/1000)
     const prefix = process.env.DISCORD_PREFIX
@@ -173,18 +174,17 @@ export async function endGiveaway(giveaway:IGiveaway){
             await refreshBotEmbed(giveaway)
         }catch{}
         await viteQueue.queueAction(address.address, async () => {
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const tokenIds = Object.keys(balances)
-            const hashes = []
             while(tokenIds[0]){
                 const token = tokenIds.shift()
-                const hash = await sendVITE(
-                    address.seed,
+                await requestWallet(
+                    "send",
+                    address.address,
                     recipient.address,
                     balances[token],
                     token
                 )
-                hashes.push(hash)
             }
         })
         const channel = client.channels.cache.get(giveaway.channel_id) as TextChannel

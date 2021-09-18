@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE, viteEvents } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne, walletConnection } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";
@@ -15,6 +15,7 @@ import GiveawayEntry from "../../models/GiveawayEntry";
 import { endGiveaway, giveawayQueue, resolveGiveaway, startGiveaway, timeoutsGiveway, watchingGiveawayMap } from "../GiveawayManager";
 import Tip from "../../models/Tip";
 import { ALLOWED_RAINS_ROLES } from "../constants";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class GiveawayCommand implements Command {
     description = "Start a new giveaway"
@@ -64,7 +65,7 @@ Examples:
         const currency = "VITC"
         const maxDurationStr = "1h"
         const maxDuration = resolveDuration(maxDurationStr)
-        const minDurationStr = "1m"// 5m
+        const minDurationStr = "1m"
         const minDuration = resolveDuration(minDurationStr)
         const [
             baseAmount,
@@ -146,7 +147,7 @@ Examples:
                 try{
                     await message.react("💊")
                 }catch{}
-                const balances = await getBalances(address.address)
+                const balances = await requestWallet("get_balances", address.address)
                 const balance = new BigNumber(balances[tokenId] || "0")
                 const totalAmountRaw = new BigNumber(convert(baseAmount, "VITC", "RAW"))
                 if(balance.isLessThan(totalAmountRaw)){
@@ -158,8 +159,9 @@ Examples:
                     )
                     return
                 }
-                const hash = await sendVITE(
-                    address.seed, 
+                const stx = await requestWallet(
+                    "send",
+                    address.address, 
                     giveawayLockedAddress.address, 
                     totalAmountRaw.toFixed(), 
                     tokenId
@@ -183,16 +185,22 @@ Examples:
                         user_id: message.author.id,
                         message_id: message.id,
                         date: new Date(),
-                        txhash: hash
+                        txhash: stx.hash
                     }),
                     Tip.create({
                         amount: parseFloat(fee.toFixed()),
                         user_id: message.author.id,
                         date: new Date(),
-                        txhash: hash
+                        txhash: stx.hash
                     }),
-                    new Promise(r => {
-                        viteEvents.once("receive_"+hash, r)
+                    new Promise<void>(r => {
+                        const listener = rtx => {
+                            if(rtx.type !== "receive")return
+                            if(rtx.from_hash !== stx.hash)return
+                            walletConnection.off("tx", listener)
+                            r()
+                        }
+                        walletConnection.on("tx", listener)
                     })
                 ])
                 // money locked

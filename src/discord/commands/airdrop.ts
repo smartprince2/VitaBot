@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE, viteEvents } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne, walletConnection } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";
@@ -13,6 +13,7 @@ import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import Airdrop from "../../models/Airdrop";
 import { endAirdrop, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
 import { BOT_OWNER } from "../constants";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class AirdropCommand implements Command {
     description = "Start a new Airdrop"
@@ -120,7 +121,7 @@ Examples:
             try{
                 await botMessage.edit("Creating airdrop... Locking funds...")
             }catch{}
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const balance = new BigNumber(balances[tokenId] || "0")
             const totalAmountRaw = new BigNumber(convert(totalAmount, currency, "RAW").split(".")[0])
             if(balance.isLessThan(totalAmountRaw)){
@@ -135,14 +136,21 @@ Examples:
                 )
                 return
             }
-            const hash = await sendVITE(
-                address.seed, 
+            const stx = await requestWallet(
+                "send",
+                address.address, 
                 airdropLockAddress.address, 
                 totalAmountRaw.toFixed(), 
                 tokenId
             )
-            await new Promise(r => {
-                viteEvents.once("receive_"+hash, r)
+            await new Promise<void>(r => {
+                const listener = rtx => {
+                    if(rtx.type !== "receive")return
+                    if(rtx.from_hash !== stx.hash)return
+                    walletConnection.off("tx", listener)
+                    r()
+                }
+                walletConnection.on("tx", listener)
             })
             // Funds are SAFU, create an entry in the database
             const airdrop = await Airdrop.create({

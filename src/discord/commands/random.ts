@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";
@@ -12,6 +12,7 @@ import { randomFromArray } from "../../common/util";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
 import { getActiveUsers } from "../ActiviaManager";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class RandomTipCommand implements Command {
     description = "Tip one random person amongst active users"
@@ -77,7 +78,7 @@ Examples:
             try{
                 await message.react("💊")
             }catch{}
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const token = tokenIds.VITC
             const balance = new BigNumber(balances[token])
             const totalAskedRaw = new BigNumber(convert(amount, "VITC", "RAW").split(".")[0])
@@ -90,8 +91,9 @@ Examples:
                 )
                 return
             }
-            const hash = await sendVITE(
-                address.seed,
+            const tx = await requestWallet(
+                "send",
+                address.address,
                 recipient.address,
                 totalAskedRaw.toFixed(),
                 token
@@ -102,7 +104,7 @@ Examples:
                 ),
                 user_id: message.author.id,
                 date: new Date(),
-                txhash: hash
+                txhash: tx.hash
             })
             try{
                 await message.react("873558842699571220")

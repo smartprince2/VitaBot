@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
@@ -9,6 +9,7 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import * as vite from "vitejs-notthomiz"
+import { requestWallet } from "../../libwallet/http";
 
 export default new class WithdrawCommand implements Command {
     description = "Withdraw the funds on the tipbot"
@@ -74,7 +75,7 @@ Examples:
             try{
                 await message.react("💊")
             }catch{}
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
@@ -91,8 +92,9 @@ Examples:
                 })
                 return
             }
-            const hash = await sendVITE(
-                address.seed, 
+            const tx = await requestWallet(
+                "send",
+                address.address, 
                 addr, 
                 amount.toFixed(), 
                 token
@@ -103,7 +105,7 @@ Examples:
             await message.channel.send({
                 content: `Your withdraw was processed!
 
-View transaction on vitescan: https://vitescan.io/tx/${hash}`,
+View transaction on vitescan: https://vitescan.io/tx/${tx.hash}`,
                 reply: {
                     messageReference: message,
                     failIfNotExists: false

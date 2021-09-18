@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
@@ -11,6 +11,7 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import * as vite from "vitejs-notthomiz"
 import Address from "../../models/Address";
 import { BOT_OWNER } from "../constants";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class EmptyCommand implements Command {
     description = "Withdraw the funds on the tipbot from a stuck address"
@@ -76,7 +77,7 @@ export default new class EmptyCommand implements Command {
             try{
                 await message.react("💊")
             }catch{}
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
@@ -93,8 +94,9 @@ export default new class EmptyCommand implements Command {
                 })
                 return
             }
-            const hash = await sendVITE(
-                address.seed, 
+            const tx = await requestWallet(
+                "send",
+                address.address, 
                 recipient.address, 
                 amount.toFixed(), 
                 token
@@ -105,7 +107,7 @@ export default new class EmptyCommand implements Command {
             await message.channel.send({
                 content: `Emptying Done!
 
-View transaction on vitescan: https://vitescan.io/tx/${hash}`,
+View transaction on vitescan: https://vitescan.io/tx/${tx.hash}`,
                 reply: {
                     messageReference: message,
                     failIfNotExists: false

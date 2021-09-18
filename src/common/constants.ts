@@ -19,7 +19,17 @@ export const tokenIds = {
     XMR: "tti_e5750d3c5b3bb5a31b8ba637",
     ETH: "tti_687d8a93915393b219212c73"
 }
-
+export const tokenTickers = {
+    tti_5649544520544f4b454e6e40: "VITE",
+    tti_22d0b205bed4d268a05dfc3c: "VITC",
+    tti_61f59e574f9f7babfe8908e5: "BAN",
+    tti_29a2af20212b985e9d49e899: "NANO",
+    tti_b90c9baffffc9dae58d1f33f: "BTC",
+    tti_564954455820434f494e69b5: "VX",
+    tti_251a3e67a41b5ea2373936c8: "VCP",
+    tti_e5750d3c5b3bb5a31b8ba637: "XMR",
+    tti_687d8a93915393b219212c73: "ETH"
+}
 export const tokenDecimals = {
     VITE: 18,
     VITC: 18,
@@ -31,7 +41,6 @@ export const tokenDecimals = {
     XMR: 12,
     ETH: 18
 }
-
 export const tokenNames = {
     VITE: "Vite",
     VITC: "Vitamin Coin 💊",

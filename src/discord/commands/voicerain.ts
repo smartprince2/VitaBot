@@ -1,7 +1,7 @@
 import { Message, VoiceChannel } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { bulkSend, getBalances, getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";
@@ -11,6 +11,7 @@ import { client } from "..";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
 import { ALLOWED_RAINS_ROLES, VITC_ADMINS } from "../constants";
+import { requestWallet, BulkSendResponse } from "../../libwallet/http";
 
 export default new class VoiceRain implements Command {
     description = "Tip users in your voice channel."
@@ -96,7 +97,7 @@ Examples:
             try{
                 await message.react("💊")
             }catch{}
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const token = tokenIds.VITC
             const balance = new BigNumber(balances[token] || 0)
             const totalAskedRaw = new BigNumber(convert(totalAsked, "VITC", "RAW"))
@@ -109,13 +110,16 @@ Examples:
                 )
                 return
             }
-            const hashes = await bulkSend(
-                address, 
-                addresses.map(e => e.address), 
-                convert(individualAmount, "VITC", "RAW"), 
+            const txs:BulkSendResponse = await requestWallet(
+                "bulk_send",
+                address.address, 
+                addresses.map(e => [
+                    e.address,
+                    convert(individualAmount, "VITC", "RAW")
+                ]),
                 token
             )
-            const hash = hashes[0]
+            const hash = txs[0][0].hash
             await Tip.create({
                 amount: parseFloat(
                     convert(totalAskedRaw, "RAW", "VITC")

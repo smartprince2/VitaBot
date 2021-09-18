@@ -9,10 +9,11 @@ import discordqueue from "../discordqueue";
 import FaucetCooldown from "../../models/FaucetCooldown";
 import { IAddress } from "../../models/Address";
 import { durationUnits } from "../../common/util";
-import { bulkSend, getBalances, getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { tokenIds } from "../../common/constants";
 import { BOT_OWNER } from "../constants";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class ClearFaucetCommand implements Command {
     description = "Clear stuck transactions in the faucet"
@@ -138,7 +139,7 @@ export default new class ClearFaucetCommand implements Command {
         // Bulk send transactions.
         await viteQueue.queueAction(address.address, async () => {
             const totalAsked = rawAmount.times(recipients.length)
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const balance = new BigNumber(balances[tokenIds.VITC])
             if(balance.isLessThan(totalAsked)){
                 try{
@@ -154,10 +155,13 @@ export default new class ClearFaucetCommand implements Command {
                 )
                 return
             }
-            await bulkSend(
-                address,
-                recipients.map(e => e.address),
-                rawAmount.toFixed().split(".")[0],
+            await requestWallet(
+                "bulk_send",
+                address.address,
+                recipients.map(e => [
+                    e.address,
+                    rawAmount.toFixed().split(".")[0]
+                ]),
                 tokenIds.VITC
             )
             try{

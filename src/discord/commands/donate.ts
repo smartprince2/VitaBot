@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Giveaway from "../../models/Giveaway";
 import Command from "../command";
@@ -10,6 +10,7 @@ import BigNumber from "bignumber.js"
 import Tip from "../../models/Tip";
 import help from "./help";
 import { refreshBotEmbed } from "../GiveawayManager";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class DonateCommand implements Command {
     description = "Add vitc/any token to the current giveaway pot."
@@ -80,7 +81,7 @@ ${process.env.DISCORD_PREFIX}do 10`
                     await message.author.send(`You can't donate nothing.`)
                 }catch{}
             }
-            const balances = await getBalances(address.address)
+            const balances = await requestWallet("get_balances", address.address)
             const balance = new BigNumber(balances[tokenIds[currency]] || 0)
             if(balance.isLessThan(amountRaw)){
                 try{
@@ -91,8 +92,9 @@ ${process.env.DISCORD_PREFIX}do 10`
                 }catch{}
                 return
             }
-            const hash = await sendVITE(
-                address.seed,
+            const tx = await requestWallet(
+                "send",
+                address.address,
                 giveawayLockAccount.address,
                 amountRaw,
                 tokenIds[currency]
@@ -102,7 +104,7 @@ ${process.env.DISCORD_PREFIX}do 10`
                     amount: parseFloat(amount.toFixed()),
                     user_id: message.author.id,
                     date: new Date(),
-                    txhash: hash
+                    txhash: tx.hash
                 })
             }
             try{

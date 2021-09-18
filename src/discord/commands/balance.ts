@@ -1,8 +1,9 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
+import { requestWallet } from "../../libwallet/http";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { generateDefaultEmbed } from "../util";
@@ -19,7 +20,7 @@ export default new class BalanceCommand implements Command {
         })
 
         const balances = await viteQueue.queueAction(address.address, async () => {
-            return await getBalances(address.address)
+            return requestWallet("get_balances", address.address)
         })
         const embed = generateDefaultEmbed()
         .setAuthor("View on vitescan.io", undefined, `https://vitescan.io/address/${address.address}`)

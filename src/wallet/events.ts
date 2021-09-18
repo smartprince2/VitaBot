@@ -4,7 +4,9 @@ export interface Transaction {
     type: "send"|"receive",
     from: string,
     to: string,
-    hash: string
+    hash: string,
+    token_id: string,
+    amount: string
 }
 
 export interface SendTransaction extends Transaction {

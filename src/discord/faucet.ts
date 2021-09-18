@@ -1,13 +1,14 @@
 import { client } from "."
 import { tokenIds, VITABOT_GITHUB } from "../common/constants"
 import { durationUnits } from "../common/util"
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../cryptocurrencies/vite"
+import { getVITEAddressOrCreateOne } from "../cryptocurrencies/vite"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import FaucetCooldown from "../models/FaucetCooldown"
 import discordqueue from "./discordqueue"
 import BigNumber from "bignumber.js"
 import { convert } from "../common/convert"
 import { generateDefaultEmbed } from "./util"
+import { requestWallet } from "../libwallet/http"
 
 export const FAUCET_CHANNEL_ID = "863555276849807380"
 export const FAUCET_PAYOUT = new BigNumber(convert("50", "VITC", "RAW"))
@@ -59,8 +60,8 @@ export async function initFaucet(){
                 return getVITEAddressOrCreateOne(message.author.id, "Discord")
             })
             await viteQueue.queueAction(address.address, async () => {
-                const balances = await getBalances(address.address)
-                const balance = new BigNumber(balances[tokenIds.VITC])
+                const balances = await requestWallet("get_balances", address.address)
+                const balance = new BigNumber(balances[tokenIds.VITC]||0)
                 if(balance.isLessThan(FAUCET_PAYOUT)){
                     try{
                         await message.react("❌")
@@ -70,8 +71,9 @@ export async function initFaucet(){
                     )
                     return
                 }
-                await sendVITE(
-                    address.seed, 
+                await requestWallet(
+                    "send",
+                    address.address, 
                     recipient.address, 
                     FAUCET_PAYOUT.toFixed(), 
                     tokenIds.VITC

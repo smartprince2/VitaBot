@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getBalances, getVITEAddressOrCreateOne, sendVITE } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Giveaway from "../../models/Giveaway";
 import GiveawayEntry from "../../models/GiveawayEntry";
@@ -11,6 +11,7 @@ import BigNumber from "bignumber.js"
 import Tip from "../../models/Tip";
 import { ALLOWED_RAINS_ROLES } from "../constants";
 import { refreshBotEmbed } from "../GiveawayManager";
+import { requestWallet } from "../../libwallet/http";
 
 export default new class TicketCommand implements Command {
     description = "Enter the current running giveaway in the channel"
@@ -83,7 +84,7 @@ ${process.env.DISCORD_PREFIX}ticket`
                     return
                 }
                 const feeRaw = convert(giveaway.fee, "VITC", "RAW")
-                const balances = await getBalances(address.address)
+                const balances = await requestWallet("get_balances", address.address)
                 const balance = new BigNumber(balances[tokenIds.VITC] || 0)
                 if(balance.isLessThan(feeRaw)){
                     try{
@@ -94,8 +95,9 @@ ${process.env.DISCORD_PREFIX}ticket`
                     }catch{}
                     return
                 }
-                const hash = await sendVITE(
-                    address.seed,
+                const tx = await requestWallet(
+                    "send",
+                    address.address,
                     giveawayLockAccount.address,
                     feeRaw,
                     tokenIds.VITC
@@ -105,13 +107,13 @@ ${process.env.DISCORD_PREFIX}ticket`
                         user_id: message.author.id,
                         message_id: giveaway.message_id,
                         date: new Date(),
-                        txhash: hash
+                        txhash: tx.hash
                     }),
                     Tip.create({
                         amount: giveaway.fee,
                         user_id: message.author.id,
                         date: new Date(),
-                        txhash: hash
+                        txhash: tx.hash
                     })
                 ])
                 try{
