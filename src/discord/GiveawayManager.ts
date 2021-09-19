@@ -61,12 +61,21 @@ export class GiveawayError extends Error {
 
 export async function getGiveawayEmbed(giveaway:IGiveaway){
     // everything stored on-chain
-    const giveawayLockAccount = await discordqueue.queueAction(giveaway.user_id, async () => {
-        return getVITEAddressOrCreateOne(giveaway.message_id, "Discord.Giveaway")
-    })
-    const balances = await viteQueue.queueAction(giveawayLockAccount.address, async () => {
-        return requestWallet("get_balances", giveawayLockAccount.address)
-    })
+    const [
+        entries,
+        balances
+    ] = await Promise.all([
+        GiveawayEntry.find({
+            message_id: giveaway.message_id
+        }),
+        discordqueue.queueAction(giveaway.user_id, async () => {
+            return getVITEAddressOrCreateOne(giveaway.message_id, "Discord.Giveaway")
+        }).then(giveawayLockAccount => {
+            return viteQueue.queueAction(giveawayLockAccount.address, async () => {
+                return requestWallet("get_balances", giveawayLockAccount.address)
+            })
+        })
+    ])
     const endTime = Math.floor((giveaway.creation_date.getTime()+giveaway.duration)/1000)
     const prefix = process.env.DISCORD_PREFIX
     const ended = giveaway.creation_date.getTime()+giveaway.duration < Date.now()
@@ -76,6 +85,8 @@ export async function getGiveawayEmbed(giveaway:IGiveaway){
 End${ended ? "ed" : "s"} at <t:${endTime}> (<t:${endTime}:R>)
 Winners: 1${giveaway.fee ? 
 `\n**Fee: ${giveaway.fee} ${tokenNameToDisplayName("VITC")}**` : ""}
+Entries: **${entries.length} participants**
+Chance of winning: **${Math.floor(1/entries.length*10000)/100}%**
 
 ${ended ? "Claimed" : "Current"} Prize(s):
 ${Object.entries(balances).map(tkn => {
@@ -156,6 +167,9 @@ export async function endGiveaway(giveaway:IGiveaway){
     try{
         await giveaway.delete()
         watchingGiveawayMap.delete(giveaway.message_id)
+        try{
+            await refreshBotEmbed(giveaway)
+        }catch{}
         const entries = await GiveawayEntry.find({
             message_id: giveaway.message_id
         })
@@ -173,9 +187,6 @@ export async function endGiveaway(giveaway:IGiveaway){
                 return getVITEAddressOrCreateOne(winningEntry.user_id, "Discord")
             })
         ])
-        try{
-            await refreshBotEmbed(giveaway)
-        }catch{}
         await viteQueue.queueAction(address.address, async () => {
             const balances = await requestWallet("get_balances", address.address)
             const tokenIds = Object.keys(balances)
