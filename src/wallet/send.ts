@@ -27,7 +27,8 @@ export async function send(address: IAddress, toAddress: string, amount: string,
         to: toAddress,
         hash: hash,
         amount: amount,
-        token_id: tokenId
+        token_id: tokenId,
+        sender_handle: address.handles[0]
     }
     events.emit("send_transaction", tx)
 
@@ -78,7 +79,7 @@ export async function rawBulkSend(from: IAddress, payouts:[string, string][], to
 
 
 export async function processBulkTransactions(transactions:IPendingTransactions[]):Promise<SendTransaction[]>{
-    const txs = []
+    const txs:SendTransaction[] = []
     while(transactions[0]){
         const transaction = transactions.shift()
         const baseTx = await viteQueue.queueAction(transaction.address.address, async () => {
@@ -89,7 +90,7 @@ export async function processBulkTransactions(transactions:IPendingTransactions[
             delete hashToSender[baseTx.hash]
         }, 600000)
         await transaction.delete()
-        txs.push(baseTx.hash)
+        txs.push(baseTx)
     }
     return txs
 }

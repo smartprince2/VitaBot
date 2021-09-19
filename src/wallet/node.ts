@@ -159,7 +159,9 @@ export async function fetchAccountBlock(hash:string){
 export async function getVotedSBP(address:string):Promise<{
     blockProducerName: string,
     status: number,
-    votes: string
+    votes: {
+        [address: string]: string
+    }
 }>{
     return wsProvider.request("contract_getVotedSBP", address)
 }

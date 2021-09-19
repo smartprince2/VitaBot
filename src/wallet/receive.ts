@@ -6,6 +6,7 @@ import events from "./events"
 import { CONSENSUS_ABI } from "./abis"
 import ActionQueue from "../common/queue"
 import SBPVote from "../models/SBPVote"
+import { hashToSender } from "./send"
 
 const skipBlocks = new Set()
 
@@ -117,6 +118,10 @@ export async function receive(block: any, address: IAddress){
             }
         })
     }
+    
+    const sender = await Address.findOne({
+        address: block.fromAddress
+    })
 
     events.emit("receive_transaction", {
         type: "receive",
@@ -125,7 +130,8 @@ export async function receive(block: any, address: IAddress){
         hash: hash,
         from_hash: block.hash,
         amount: block.amount,
-        token_id: block.tokenInfo.tokenId
+        token_id: block.tokenInfo.tokenId,
+        sender_handle: hashToSender[block.hash] || sender?.handles[0] || null
     })
     return hash
 }

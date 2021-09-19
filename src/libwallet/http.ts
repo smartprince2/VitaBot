@@ -33,13 +33,22 @@ export type SendResponse = SendTransaction
 export type GetAccountBlockResponse = any
 export type GetAccountBlocksResponse = GetAccountBlockResponse[]
 
+export type GetSBPVotesResponse = {
+    blockProducerName: string,
+    status: string,
+    votes: {
+        [address: string]: string
+    }
+}
+
 export interface WalletResponses {
     bulk_send: BulkSendResponse,
     get_balances: GetBalancesResponses,
     get_tokens: GetTokenResponse,
     send: SendResponse,
     get_account_block: GetAccountBlockResponse,
-    get_account_blocks: GetAccountBlocksResponse
+    get_account_blocks: GetAccountBlocksResponse,
+    get_sbp_votes: GetSBPVotesResponse
 }
 
 export interface WalletRequestParams {
@@ -48,7 +57,8 @@ export interface WalletRequestParams {
     get_tokens: [],
     send: [string, string, string, string],
     get_account_block: [string],
-    get_account_blocks: [string, string, string, number]
+    get_account_blocks: [string, string, string, number],
+    get_sbp_votes: [string]
 }
 
 export async function requestWallet<Action extends keyof WalletResponses>(action:Action, ...params: WalletRequestParams[Action]):Promise<WalletResponses[Action]>{

@@ -6,7 +6,8 @@ export interface Transaction {
     to: string,
     hash: string,
     token_id: string,
-    amount: string
+    amount: string,
+    sender_handle: string
 }
 
 export interface SendTransaction extends Transaction {

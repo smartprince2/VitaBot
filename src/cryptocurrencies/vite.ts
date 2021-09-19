@@ -12,8 +12,6 @@ import { GetTokenResponse, requestWallet } from "../libwallet/http";
 import lt from "long-timeout"
 import GiveawayWinner from "../models/GiveawayWinner";
 
-const hashToSender = {}
-
 export const walletConnection = new WebsocketConnection()
 
 walletConnection.on("tx", async transaction => {
@@ -53,10 +51,8 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                 switch(platform){
                     case "Quota": {
                         //let's try to resolve the original id
-                        const sender = hashToSender[transaction.hash]
-                        if(!sender)break
-                        delete hashToSender[transaction.hash]
-                        const id = sender.split(".")[0]
+                        if(!transaction.sender_handle)return
+                        const id = transaction.sender_handle.split(".")[0]
                         const user = (await parseDiscordUser(id))[0]
                         if(user)mention = user.tag
                         break
