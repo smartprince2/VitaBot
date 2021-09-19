@@ -2,7 +2,7 @@ import { createDM, Tweet } from "..";
 import Command from "../command";
 
 export default new class Balance implements Command {
-    public = true
+    public = false
     dm = true
     description = "Display your balance"
     extended_description = `Display your current balance`

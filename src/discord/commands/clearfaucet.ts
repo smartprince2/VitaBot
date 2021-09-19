@@ -9,7 +9,7 @@ import discordqueue from "../discordqueue";
 import FaucetCooldown from "../../models/FaucetCooldown";
 import { IAddress } from "../../models/Address";
 import { durationUnits } from "../../common/util";
-import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { tokenIds } from "../../common/constants";
 import { BOT_OWNER } from "../constants";

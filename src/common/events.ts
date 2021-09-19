@@ -55,7 +55,7 @@ export class VitaBotEventEmitter <events extends {
 }
 
 const events = new VitaBotEventEmitter<{
-    
+    wallet_ready: []
 }>()
 
 export default events

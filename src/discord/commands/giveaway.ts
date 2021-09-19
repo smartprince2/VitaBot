@@ -1,7 +1,8 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getVITEAddressOrCreateOne, walletConnection } from "../../cryptocurrencies/vite";
+import { walletConnection } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";
@@ -59,7 +60,7 @@ Examples:
         if(!amount || !/^\d+(\.\d+)?$/.test(amount))return help.execute(message, [command])
         if(!durationRaw)return help.execute(message, [command])
         if(!feeRaw){
-            feeRaw = "0"
+            feeRaw = "1"
         }
         if(!/^\d+(\.\d+)?$/.test(feeRaw) || feeRaw.length > 5)return help.execute(message, [command])
         const currency = "VITC"
@@ -109,7 +110,8 @@ Examples:
             )
             return
         }
-        if(fee.isGreaterThan(0)){
+        // eslint-disable-next-line no-constant-condition
+        if(true/*fee.isGreaterThan(0)*/){
             if(fee.isLessThan(1)){
                 try{
                     await message.react("❌")

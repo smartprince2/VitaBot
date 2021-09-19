@@ -1,7 +1,8 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getVITEAddressOrCreateOne, walletConnection } from "../../cryptocurrencies/vite";
+import { walletConnection } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../wallet/address"
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import help from "./help";

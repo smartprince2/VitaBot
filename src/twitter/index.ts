@@ -3,8 +3,9 @@ import { dbPromise } from "../common/load-db"
 import Twit from "twitter-api-v2"
 import Twitter from "twitter"
 import Command from "./command"
-import {promises as fs} from "fs"
-import {join} from "path"
+import { promises as fs } from "fs"
+import { join } from "path"
+import { Autohook } from "twitter-autohook"
 
 export const twitc = new Twit({
     appKey: process.env.TWITTER_API_KEY,
@@ -139,6 +140,7 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
     
     await dbPromise
 
+    // normal tweets
 	const stream = client.stream("statuses/filter", {track: mention.slice(1)})
     stream.on("data", async tweet => {
         console.log(tweet.text)
@@ -170,4 +172,18 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
 	stream.on("error", error => {
         throw error
 	})
+
+    const webhook = new Autohook()
+    await webhook.removeWebhooks()
+    
+    webhook.on("event", event => {
+        console.log(event)
+    })
+
+    await webhook.start()
+  
+    await webhook.subscribe({
+        oauth_token: process.env.TWITTER_ACCESS_TOKEN,
+        oauth_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+    })
 })

@@ -3,13 +3,16 @@ import Discord, { Collection } from "discord.js"
 import {promises as fs} from "fs"
 import { join } from "path"
 import Command from "./command"
-import { generateDefaultEmbed } from "./util"
-import { VITABOT_GITHUB } from "../common/constants"
+import { generateDefaultEmbed, parseDiscordUser } from "./util"
+import { tokenTickers, VITABOT_GITHUB } from "../common/constants"
 import { dbPromise } from "../common/load-db"
 import { FAUCET_CHANNEL_ID, initFaucet } from "./faucet"
 import { searchAirdrops } from "./AirdropManager"
 import { durationUnits } from "../common/util"
 import { searchGiveaways } from "./GiveawayManager"
+import { walletConnection } from "../cryptocurrencies/vite"
+import Address from "../models/Address"
+import { convert, tokenNameToDisplayName } from "../common/convert"
 
 export const client = new Discord.Client({
     allowedMentions: {
@@ -54,6 +57,79 @@ client.on("ready", async () => {
     .catch(console.error)
     // every hour
     setTimeout(searchAirdrops, durationUnits.h)
+
+    
+    walletConnection.on("tx", async transaction => {
+        if(transaction.type !== "receive")return
+        
+        const address = await Address.findOne({
+            address: transaction.to
+        })
+        // shouldn't happen but
+        if(!address)return
+
+        // Don't send dm on random coins, for now just tell for registered coins.
+        if(!(transaction.token_id in tokenTickers))return
+        
+        const tokenName = tokenTickers[transaction.token_id]
+        const displayNumber = convert(
+            transaction.amount, 
+            "RAW", 
+            tokenName
+        )
+        let text = `
+
+View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
+
+        const sendingAddress = await Address.findOne({
+            address: transaction.from,
+            network: "VITE"
+        })
+        if(sendingAddress){
+            const [id, platform, sendingVariant] = sendingAddress.handles[0].split(".")
+            const [,,variant] = address.handles[0].split(".")
+            switch(sendingVariant){
+                case "Giveaway": 
+                    text = `You won ${displayNumber} ${tokenNameToDisplayName(tokenName)} from a Giveaway!`+text
+                break
+                default: {
+                    let mention = "Unknown User"
+                    switch(platform){
+                        case "Quota": {
+                            //let's try to resolve the original id
+                            if(!transaction.sender_handle)return
+                            const id = transaction.sender_handle.split(".")[0]
+                            const user = (await parseDiscordUser(id))[0]
+                            if(user)mention = user.tag
+                            break
+                        }
+                        case "Discord": {
+                            const user = (await parseDiscordUser(id))[0]
+                            if(!user)break
+                            mention = user.tag
+                            break
+                        }
+                        case "Faucet":{
+                            mention = "Faucet"
+                        }
+                    }text = `You were tipped **${displayNumber} ${tokenNameToDisplayName(tokenName)}** by **${mention}**!`+text
+                }
+            }
+        }else{
+            text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance!`+text
+        }
+        for(const handle of address.handles){
+            const [id, service] = handle.split(".")
+            switch(service){
+                case "Discord": {
+                    const user = client.users.cache.get(id)
+                    if(!user)return
+                    user.send(text).catch(()=>{})
+                    break
+                }
+            }
+        }
+    })
 })
 
 const prefix = process.env.DISCORD_PREFIX

@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { parseDiscordUser } from "../util";

@@ -1,7 +1,7 @@
 import { client } from "."
 import * as lt from "long-timeout"
-import { randomFromArray } from "../common/util"
-import { getVITEAddressOrCreateOne } from "../cryptocurrencies/vite"
+import { durationUnits, randomFromArray } from "../common/util"
+import { getVITEAddressOrCreateOne } from "../wallet/address"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import discordqueue from "./discordqueue"
 import { TextChannel } from "discord.js"
@@ -12,6 +12,9 @@ import { generateDefaultEmbed } from "./util"
 import GiveawayEntry from "../models/GiveawayEntry"
 import GiveawayWinner from "../models/GiveawayWinner"
 import { requestWallet } from "../libwallet/http"
+import Address from "../models/Address"
+import events from "../common/events"
+import asyncPool from "tiny-async-pool"
 
 export const watchingGiveawayMap = new Map<string, IGiveaway>()
 export const timeoutsGiveway = new Map<string, lt.Timeout>()
@@ -220,3 +223,76 @@ export async function endGiveaway(giveaway:IGiveaway){
         throw new GiveawayError(`An error occured with the giveaway. Ask the admins to unlock Giveaway ${giveaway.message_id}'s funds.`)
     }
 }
+
+
+export async function searchStuckGiveaways(){
+    const addresses = await Address.find({
+        handles: {
+            $regex: "^\\d+\\.Discord\\.Giveaway$"
+        }
+    })
+    await asyncPool(25, addresses, async address => {
+        const mess_id = address.handles[0].split(".")[0]
+        const giveaway = await Giveaway.findOne({
+            message_id: mess_id
+        })
+        if(giveaway)return
+
+        const balances = await requestWallet("get_balances", address.address)
+        const tokens = []
+        for(const tokenId in balances){
+            if(balances[tokenId] === "0")continue
+            tokens.push(tokenId)
+        }
+        if(tokens.length === 0)return
+        const winner = await GiveawayWinner.findOne({
+            message_id: mess_id
+        })
+        let recipient = null
+        if(!winner){
+            // try to find the recipient address
+            // by looking at send blocks
+            const blocks = await requestWallet(
+                "get_account_blocks",
+                address.address,
+                null,
+                null,
+                100
+            )
+            for(const block of blocks){
+                // send block
+                if(block.blockType !== 2)continue
+
+                recipient = block.toAddress
+                break
+            }
+            if(!recipient){
+                console.warn(`Stuck giveaway account: ${address.address}`)
+                return
+            }
+        }else{
+            recipient = (await getVITEAddressOrCreateOne(winner.user_id, "Discord")).address
+        }
+        // we got the funds and the recipient, send it
+        for(const token of tokens){
+            await requestWallet(
+                "send",
+                address.address,
+                recipient, 
+                balances[token],
+                token
+            )
+        }
+    })
+    await new Promise((resolve) => {
+        lt.setTimeout(resolve, durationUnits.d)
+    })
+}
+
+events.on("wallet_ready", async () => {
+    // Empty stuck giveaways
+    // eslint-disable-next-line no-constant-condition
+    while(true){
+        await searchStuckGiveaways()
+    }
+})

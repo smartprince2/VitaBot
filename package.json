@@ -63,6 +63,7 @@
     "tiny-async-pool": "^1.2.0",
     "twitter": "^1.7.1",
     "twitter-api-v2": "^1.5.1",
+    "twitter-autohook": "^1.7.2",
     "vitejs-notthomiz": "^2.3.15",
     "vitejs-notthomiz-ws": "^2.3.15",
     "ws": "^8.2.1"

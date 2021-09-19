@@ -111,7 +111,7 @@ Promise.all([
             await requestWallet("bulk_send", rewardAddress.address, payouts, tokenIds.VITE)
             await requestWallet("bulk_send", rewardAddress.address, vitcPayouts, tokenIds.VITC)
 
-            console.log("Sent ! In", Date.now()/1000)
+            console.log("Sent ! In", (Date.now()-start)/1000)
         })
     })
 })

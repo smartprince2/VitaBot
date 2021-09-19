@@ -1,7 +1,7 @@
 import { client } from "."
 import { tokenIds, VITABOT_GITHUB } from "../common/constants"
 import { durationUnits } from "../common/util"
-import { getVITEAddressOrCreateOne } from "../cryptocurrencies/vite"
+import { getVITEAddressOrCreateOne } from "../wallet/address"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import FaucetCooldown from "../models/FaucetCooldown"
 import discordqueue from "./discordqueue"

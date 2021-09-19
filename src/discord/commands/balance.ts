@@ -1,7 +1,7 @@
 import { Message } from "discord.js";
 import { tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { getVITEAddressOrCreateOne } from "../../cryptocurrencies/vite";
+import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { requestWallet } from "../../libwallet/http";
 import Command from "../command";

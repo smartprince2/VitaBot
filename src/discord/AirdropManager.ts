@@ -1,7 +1,7 @@
 import { client } from "."
 import { tokenIds } from "../common/constants"
 import * as lt from "long-timeout"
-import { getVITEAddressOrCreateOne } from "../cryptocurrencies/vite"
+import { getVITEAddressOrCreateOne } from "../wallet/address"
 import viteQueue from "../cryptocurrencies/viteQueue"
 import Airdrop, { IAirdrop } from "../models/Airdrop"
 import discordqueue from "./discordqueue"
