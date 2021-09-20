@@ -11,20 +11,23 @@ import { generateDefaultEmbed } from "./util"
 import { requestWallet } from "../libwallet/http"
 
 export const FAUCET_CHANNEL_ID = "863555276849807380"
+export const FAUCET_CHANNEL_ID_VITAMINHEAD = "889401673196404756"
 export const FAUCET_PAYOUT = new BigNumber(convert("50", "VITC", "RAW"))
+export const FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert("100", "VITC", "RAW"))
 
 export async function initFaucet(){
     const address = await getVITEAddressOrCreateOne("VitaBot", "Faucet")
     console.info(`Faucet address: ${address.address}`)
 
     client.on("messageCreate", async (message) => {
-        if(message.channel.id !== FAUCET_CHANNEL_ID)return
+        if(![FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.channel.id))return
         if(message.author.bot){
             if(message.author.id !== client.user.id)await message.delete()
             return
         }
         const isAdmin = message.member.roles.cache.has("862755971000172579") || message.member.roles.cache.has("871009109237960704")
         if(isAdmin)return
+        const payout = message.channel.id === FAUCET_CHANNEL_ID_VITAMINHEAD ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
         try{
             await discordqueue.queueAction(message.author.id+".faucet", async () => {
                 let cooldown = await FaucetCooldown.findOne({
@@ -62,7 +65,7 @@ export async function initFaucet(){
             await viteQueue.queueAction(address.address, async () => {
                 const balances = await requestWallet("get_balances", address.address)
                 const balance = new BigNumber(balances[tokenIds.VITC]||0)
-                if(balance.isLessThan(FAUCET_PAYOUT)){
+                if(balance.isLessThan(payout)){
                     try{
                         await message.react("❌")
                     }catch{}
@@ -75,7 +78,7 @@ export async function initFaucet(){
                     "send",
                     address.address, 
                     recipient.address, 
-                    FAUCET_PAYOUT.toFixed(), 
+                    payout.toFixed(), 
                     tokenIds.VITC
                 )
                 try{
