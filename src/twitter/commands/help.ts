@@ -18,7 +18,7 @@ Example:
 
     async executePublic(data:Tweet, args: string[]){
         await this.sendHelp(data.user.id, args[0])
-        await replyTweet(data.in_reply_to_status_id, "I've sent the help menu in your DM!")
+        await replyTweet(data.id, "I've sent the help menu in your DM!")
     }
 
     async executePrivate(message:DMMessage, args: string[]){

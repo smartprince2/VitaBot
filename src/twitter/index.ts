@@ -29,9 +29,7 @@ export const commands = new Map<string, Command>()
 export const rawCommands = [] as Command[]
 
 export function replyTweet(reply_to: string, text: string){
-    return twitc.v1.tweet(text, {
-        in_reply_to_status_id: reply_to
-    })
+    return twitc.v1.reply(text, reply_to)
 }
 
 // Broken typing on this because this payload won't work with normal Twitter, and needs twitc
@@ -136,7 +134,6 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
             commands.set(alias, command)
         }
     }
-    console.log(rawCommands)
     // wait for db before launching bot
     
     await dbPromise
@@ -213,17 +210,6 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
     // normal tweets
 	const stream = client.stream("statuses/filter", {track: mention.slice(1)})
     stream.on("data", async tweet => {
-        let args = tweet.text.split(/ +/g)
-        const mentionIndex = args.indexOf(mention)
-        // not mentionned.
-        if(mentionIndex < 0)return
-        args = args.slice(mentionIndex+1)
-        const command = args.shift().toLowerCase()
-        
-        const cmd = commands.get(command)
-        if(!cmd?.public)return
-        const n = nonce++
-
         // fucking bad library
         tweet.id = tweet.id_str
         delete tweet.id_str
@@ -232,18 +218,41 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
         tweet.user.id = tweet.user.id_str
         delete tweet.user.id_str
 
-        try{
-            await cmd.executePublic(tweet, args, command)
-        }catch(err){
-            if(!(err instanceof Error) && "error" in err){
-                // eslint-disable-next-line no-ex-assign
-                err = JSON.stringify(err.error, null, "    ")
+        let tempArgs = tweet.text.split(/ +/g)
+        const mentionIndexs = []
+        // eslint-disable-next-line no-constant-condition
+        while(true){
+            if(!tempArgs.length)break
+            const mentionIndex = tempArgs.indexOf(mention)
+            if(mentionIndex < 0)break
+            tempArgs = tempArgs.slice(mentionIndex+1)
+            mentionIndexs.push(mentionIndex)
+        }
+        
+        // not mentionned.
+        if(!mentionIndexs.length)return
+        for(const mentionIndex of mentionIndexs){
+            const args = tweet.text.split(/ +/g).slice(mentionIndex+1)
+            const command = args.shift().toLowerCase()
+            
+            const cmd = commands.get(command)
+            if(!cmd)continue
+            if(!cmd.public)return
+            const n = nonce++
+    
+            try{
+                await cmd.executePublic(tweet, args, command)
+            }catch(err){
+                if(!(err instanceof Error) && "error" in err){
+                    // eslint-disable-next-line no-ex-assign
+                    err = JSON.stringify(err.error, null, "    ")
+                }
+                console.error(`${command} Twitter ${n}`, err)
+                await replyTweet(
+                    tweet.id,
+                    `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`
+                )
             }
-            console.error(`${command} Twitter ${n}`, err)
-            await replyTweet(
-                tweet.id,
-                `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`
-            )
         }
     })
 	stream.on("error", error => {

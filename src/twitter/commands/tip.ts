@@ -33,7 +33,6 @@ Give one ${tokenNameToDisplayName("VITC")} to more than one person
 
     async executePublic(tweet:Tweet, args: string[], command: string){
         const tip = await this.sendTip(args, command, tweet.user.id, "public", tweet)
-        console.log(tip)
         if(!tip)return
         if(tip.type == "help")return help.executePublic(tweet, [command])
         const text = this.getText(tip)

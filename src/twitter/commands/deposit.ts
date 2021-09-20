@@ -14,7 +14,7 @@ export default new class DepositCommand implements Command {
 
     async executePublic(data:Tweet){
         await this.sendDepositAddress(data.user.id)
-        await replyTweet(data.in_reply_to_status_id, "I've sent your deposit address in your DM!")
+        await replyTweet(data.id, "I've sent your deposit address in your DM!")
     }
 
     async executePrivate(message:DMMessage){
