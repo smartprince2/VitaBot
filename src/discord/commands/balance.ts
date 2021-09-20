@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { tokenTickers } from "../../common/constants";
+import { tokenIds, tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -16,12 +16,15 @@ export default new class BalanceCommand implements Command {
 
     async execute(message:Message){
         const address = await discordqueue.queueAction(message.author.id, async () => {
-            return await getVITEAddressOrCreateOne(message.author.id, "Discord")
+            return getVITEAddressOrCreateOne(message.author.id, "Discord")
         })
 
         const balances = await viteQueue.queueAction(address.address, async () => {
             return requestWallet("get_balances", address.address)
         })
+
+        if(!balances[tokenIds.VITC])balances[tokenIds.VITC] = "0"
+
         const embed = generateDefaultEmbed()
         .setAuthor("View on vitescan.io", undefined, `https://vitescan.io/address/${address.address}`)
         .setDescription(Object.keys(balances).map(tokenId => {

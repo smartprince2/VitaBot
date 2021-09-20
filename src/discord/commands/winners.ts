@@ -15,15 +15,20 @@ Examples:
     usage = ""
 
     async execute(message:Message){
+        const baseQuery = {
+            guild_id: message.guild?.id
+        }
+        if(!message.guild)delete baseQuery.guild_id
         const [
             numOfWinners,
             last15,
             numOfWonGiveaways
         ] = await Promise.all([
-            GiveawayWinner.countDocuments(),
-            GiveawayWinner.find().sort({date: -1}).limit(15),
+            GiveawayWinner.countDocuments(baseQuery),
+            GiveawayWinner.find(baseQuery).sort({date: -1}).limit(15),
             GiveawayWinner.countDocuments({
-                user_id: message.author.id
+                user_id: message.author.id,
+                ...baseQuery
             })
         ])
 

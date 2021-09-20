@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { Tweet } from "."
+import { DMMessage, Tweet } from "."
 
 export default class Command {
     description: string
@@ -14,7 +14,11 @@ export default class Command {
     public: boolean
     dm: boolean
 
-    async execute(tweet:Tweet, args:string[], command:string):Promise<void>{
+    async executePublic?(tweet:Tweet, args:string[], command:string):Promise<void>{
+        throw new CommandError("The command wasn't defined in its file.")
+    }
+
+    async executePrivate?(tweet:DMMessage, args:string[], command:string):Promise<void>{
         throw new CommandError("The command wasn't defined in its file.")
     }
 }

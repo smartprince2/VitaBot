@@ -19,7 +19,13 @@ Promise.all([
     dbPromise,
     ws.connect()
 ]).then(async () => {
-    const rewardAddress = await getVITEAddressOrCreateOne("SBP", "Rewards")
+    const [
+        rewardAddress,
+        quotaAddress
+    ] = await Promise.all([
+        getVITEAddressOrCreateOne("SBP", "Rewards"),
+        getVITEAddressOrCreateOne("Batch", "Quota")
+    ])
     console.log(`Reward address: ${rewardAddress.address}`)
     ws.on("tx", async tx => {
         if(tx.to !== rewardAddress.address || tx.type !== "receive")return
@@ -45,6 +51,10 @@ Promise.all([
             for(const address in votes.votes){
                 // skip smart contracts
                 if(vite.wallet.isValidAddress(address) === vite.wallet.AddressType.Contract)continue
+                if([
+                    rewardAddress.address,
+                    quotaAddress.address
+                ].includes(address))continue
 
                 let sbpVote = await SBPVote.findOne({
                     address: address

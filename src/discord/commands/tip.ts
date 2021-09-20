@@ -81,15 +81,7 @@ Examples:
         for(const recipient of recipientsRaw){
             promises.push((async () => {
                 try{
-                    let users = await parseDiscordUser(recipient)
-                    if(message.author.id === BOT_OWNER){
-                        if(recipient === "@everyone"){
-                            const members = await message.guild.members.fetch()
-                            users = members.filter(e => 
-                                !e.user.bot
-                            ).map(e => e.user)
-                        }
-                    }
+                    const users = await parseDiscordUser(recipient)
                     for(const user of users){
                         // couldn't find it
                         if(!user)continue

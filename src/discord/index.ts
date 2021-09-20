@@ -58,7 +58,6 @@ client.on("ready", async () => {
     // every hour
     setTimeout(searchAirdrops, durationUnits.h)
 
-    
     walletConnection.on("tx", async transaction => {
         if(transaction.type !== "receive")return
         
@@ -87,7 +86,6 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
         })
         if(sendingAddress){
             const [id, platform, sendingVariant] = sendingAddress.handles[0].split(".")
-            const [,,variant] = address.handles[0].split(".")
             switch(sendingVariant){
                 case "Giveaway": 
                     text = `You won ${displayNumber} ${tokenNameToDisplayName(tokenName)} from a Giveaway!`+text

@@ -6,7 +6,7 @@ import { generateDefaultEmbed } from "../util";
 
 export default new class HelpCommand implements Command {
     description = "💊"
-    extended_description = `This is the **help** command. You'll find a lot of informations on the other commands of the bot.
+    extended_description = `This is the **help** command. You'll find a lot of informations on other commands of the bot.
     
 **<argument>** are **mandatory** arguments
 **{argument}** are **optionnal** arguments

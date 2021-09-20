@@ -6,6 +6,11 @@ import Command from "./command"
 import { promises as fs } from "fs"
 import { join } from "path"
 import { Autohook } from "twitter-autohook"
+import { walletConnection } from "../cryptocurrencies/vite"
+import Address from "../models/Address"
+import { tokenTickers } from "../common/constants"
+import { convert, tokenNameToDisplayName } from "../common/convert"
+import { fetchUser } from "./users"
 
 export const twitc = new Twit({
     appKey: process.env.TWITTER_API_KEY,
@@ -24,17 +29,8 @@ export const commands = new Map<string, Command>()
 export const rawCommands = [] as Command[]
 
 export function replyTweet(reply_to: string, text: string){
-    return new Promise<Tweet>((resolve, reject) => {
-        client.post("statuses/update", {
-            status: text,
-            in_reply_to_status_id: reply_to
-        }, (error, data: any) => {
-            if(error){
-                reject(error)
-            }else{
-                resolve(data)
-            }
-        })
+    return twitc.v1.tweet(text, {
+        in_reply_to_status_id: reply_to
     })
 }
 
@@ -47,8 +43,7 @@ export async function createDM(recipient_id: string, text: string):Promise<any>{
 }
 
 export interface TwitterUser {
-    id: number,
-    id_str: string,
+    id: string,
     name: string,
     screen_name: string,
     location: string,
@@ -83,17 +78,21 @@ export interface TwitterUser {
     default_profile_image: boolean
 }
 
+export interface DMMessage {
+    id: string,
+    text: string,
+    user: TwitterUser,
+    entities: Entities
+}
+
 export interface Tweet {
     created_at: string,
-    id: number,
-    id_str: string,
+    id: string,
     text: string,
     source: string,
     truncated: boolean,
-    in_reply_to_status_id: number,
-    in_reply_to_status_id_str: string,
-    in_reply_to_user_id: number,
-    in_reply_to_user_id_str: string,
+    in_reply_to_status_id: string,
+    in_reply_to_user_id: string,
     in_reply_to_screen_name: string,
     user: TwitterUser,
     is_quote_status: boolean,
@@ -101,18 +100,7 @@ export interface Tweet {
     reply_count: number,
     retweet_count: number,
     favorite_count: number,
-    entities: {
-        hashtags: string[],
-        urls: string[],
-        user_mentions: {
-            screen_name: string,
-            name: string,
-            id: number,
-            id_str: number,
-            indices: number[]
-        }[],
-        symbols: string[]
-    },
+    entities: Entities,
     favorited: boolean,
     retweeted: boolean,
     filter_level: string,
@@ -120,7 +108,19 @@ export interface Tweet {
     timstamp_ms: string
 }
 
-const mention = "@jen_wina"
+export interface Entities {
+    hashtags: string[],
+    urls: string[],
+    user_mentions: {
+        screen_name: string,
+        name: string,
+        id: number,
+        indices: number[]
+    }[],
+    symbols: string[]
+}
+
+export const mention = "@vitctipbot"
 let nonce = 0
 
 fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
@@ -136,14 +136,83 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
             commands.set(alias, command)
         }
     }
+    console.log(rawCommands)
     // wait for db before launching bot
     
     await dbPromise
 
+    walletConnection.on("tx", async transaction => {
+        if(transaction.type !== "receive")return
+        
+        const address = await Address.findOne({
+            address: transaction.to
+        })
+        // shouldn't happen but
+        if(!address)return
+
+        // Don't send dm on random coins, for now just tell for registered coins.
+        if(!(transaction.token_id in tokenTickers))return
+        
+        const tokenName = tokenTickers[transaction.token_id]
+        const displayNumber = convert(
+            transaction.amount, 
+            "RAW", 
+            tokenName
+        )
+        let text = `
+
+View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
+
+        const sendingAddress = await Address.findOne({
+            address: transaction.from,
+            network: "VITE"
+        })
+        if(sendingAddress){
+            const [id, platform, sendingVariant] = sendingAddress.handles[0].split(".")
+            switch(sendingVariant){
+                case "Giveaway": 
+                    text = `You won ${displayNumber} ${tokenNameToDisplayName(tokenName)} from a Giveaway!`+text
+                break
+                default: {
+                    let mention = "Unknown User"
+                    switch(platform){
+                        case "Quota": {
+                            //let's try to resolve the original id
+                            if(!transaction.sender_handle)return
+                            const id = transaction.sender_handle.split(".")[0]
+                            const user = await fetchUser(id)
+                            if(user)mention = "@"+user.username
+                            break
+                        }
+                        case "Twitter": {
+                            const user = await fetchUser(id)
+                            if(!user)break
+                            mention = "@"+user.username
+                            break
+                        }
+                        case "Faucet":{
+                            mention = "Faucet"
+                        }
+                    }text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention}!`+text
+                }
+            }
+        }else{
+            text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance!`+text
+        }
+        for(const handle of address.handles){
+            const [id, service] = handle.split(".")
+            switch(service){
+                case "Twitter": {
+                    createDM(id, text).catch(()=>{})
+                    break
+                }
+            }
+        }
+    })
+
     // normal tweets
 	const stream = client.stream("statuses/filter", {track: mention.slice(1)})
     stream.on("data", async tweet => {
-        console.log(tweet.text)
         let args = tweet.text.split(/ +/g)
         const mentionIndex = args.indexOf(mention)
         // not mentionned.
@@ -155,16 +224,24 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
         if(!cmd?.public)return
         const n = nonce++
 
+        // fucking bad library
+        tweet.id = tweet.id_str
+        delete tweet.id_str
+        tweet.in_reply_to_status_id = tweet.in_reply_to_status_id_str
+        delete tweet.in_reply_to_status_id_str
+        tweet.user.id = tweet.user.id_str
+        delete tweet.user.id_str
+
         try{
-            await cmd.execute(tweet, args, command)
+            await cmd.executePublic(tweet, args, command)
         }catch(err){
-            console.error(`${command} Twitter ${n}`, err)
             if(!(err instanceof Error) && "error" in err){
                 // eslint-disable-next-line no-ex-assign
                 err = JSON.stringify(err.error, null, "    ")
             }
+            console.error(`${command} Twitter ${n}`, err)
             await replyTweet(
-                tweet.id_str,
+                tweet.id,
                 `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`
             )
         }
@@ -173,17 +250,58 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
         throw error
 	})
 
-    const webhook = new Autohook()
+    const webhook = new Autohook({
+        consumer_key: process.env.TWITTER_API_KEY,
+        consumer_secret: process.env.TWITTER_API_SECRET,
+        token: process.env.TWITTER_ACCESS_TOKEN,
+        token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
+        env: "production",
+        port: 1765
+    })
     await webhook.removeWebhooks()
     
-    webhook.on("event", event => {
-        console.log(event)
+    webhook.on("event", async msg => {
+        // likely typing in dms, we don't care about those.
+        if(!("direct_message_events" in msg))return
+        for(const event of msg.direct_message_events){
+            if(event.type !== "message_create")continue
+            const user = msg.users[event.message_create.sender_id]
+            if("@"+user.screen_name === mention)continue
+            const message:DMMessage = {
+                entities: event.message_create.message_data.entities,
+                id: event.id,
+                text: event.message_create.message_data.text,
+                user: user
+            } 
+            if(!message.text.startsWith(".")){
+                createDM(message.user.id, "Hey 👋, If you're wondering, my prefix is ., you can see a list of commands by doing .help")
+                continue
+            }
+            const args = message.text.slice(1).trim().split(/ +/g)
+            const command = args.shift().toLowerCase()
+
+            const cmd = commands.get(command)
+            if(!cmd?.dm)return
+
+            const n = nonce++
+
+            try{
+                await cmd.executePrivate(message, args, command)
+            }catch(err){
+                if(!(err instanceof Error) && "error" in err){
+                    // eslint-disable-next-line no-ex-assign
+                    err = JSON.stringify(err.error, null, "    ")
+                }
+                console.error(`${command} Twitter ${n}`, err)
+                await createDM(user.id, `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`)
+            }
+        }
     })
 
     await webhook.start()
   
     await webhook.subscribe({
         oauth_token: process.env.TWITTER_ACCESS_TOKEN,
-        oauth_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
+        oauth_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
     })
 })

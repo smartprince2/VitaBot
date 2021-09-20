@@ -2,7 +2,7 @@
   "name": "vitabot",
   "version": "1.0.0",
   "description": "Tipbots for Vitamin Coin on the vite blockchain!",
-  "main": "dist/all/index.js",
+  "main": "node dist/wallet",
   "scripts": {
     "test": "npm run build && npm start",
     "build": "tsc",
@@ -64,6 +64,7 @@
     "twitter": "^1.7.1",
     "twitter-api-v2": "^1.5.1",
     "twitter-autohook": "^1.7.2",
+    "twitter-text": "^3.1.0",
     "vitejs-notthomiz": "^2.3.15",
     "vitejs-notthomiz-ws": "^2.3.15",
     "ws": "^8.2.1"
