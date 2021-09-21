@@ -9,6 +9,7 @@ import BigNumber from "bignumber.js"
 import { convert } from "../common/convert"
 import { generateDefaultEmbed } from "./util"
 import { requestWallet } from "../libwallet/http"
+import { VITC_ADMINS } from "./constants"
 
 export const FAUCET_CHANNEL_ID = "863555276849807380"
 export const FAUCET_CHANNEL_ID_VITAMINHEAD = "889401673196404756"
@@ -25,7 +26,7 @@ export async function initFaucet(){
             if(message.author.id !== client.user.id)await message.delete()
             return
         }
-        const isAdmin = message.member.roles.cache.has("862755971000172579") || message.member.roles.cache.has("871009109237960704")
+        const isAdmin = VITC_ADMINS.includes(message.author.id)
         if(isAdmin)return
         const payout = message.channel.id === FAUCET_CHANNEL_ID_VITAMINHEAD ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
         try{

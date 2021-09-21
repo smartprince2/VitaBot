@@ -6,13 +6,14 @@ import Command from "./command"
 import { generateDefaultEmbed, parseDiscordUser } from "./util"
 import { tokenTickers, VITABOT_GITHUB } from "../common/constants"
 import { dbPromise } from "../common/load-db"
-import { FAUCET_CHANNEL_ID, initFaucet } from "./faucet"
+import { FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD, initFaucet } from "./faucet"
 import { searchAirdrops } from "./AirdropManager"
 import { durationUnits } from "../common/util"
 import { searchGiveaways } from "./GiveawayManager"
 import { walletConnection } from "../cryptocurrencies/vite"
 import Address from "../models/Address"
 import { convert, tokenNameToDisplayName } from "../common/convert"
+import { VITC_ADMINS } from "./constants"
 
 export const client = new Discord.Client({
     allowedMentions: {
@@ -132,9 +133,8 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
 
 const prefix = process.env.DISCORD_PREFIX
 client.on("messageCreate", async message => {
-    if(message.channel.id === FAUCET_CHANNEL_ID){
-        const isAdmin = message.member.roles.cache.has("862755971000172579") || message.member.roles.cache.has("871009109237960704")
-        if(!isAdmin)return
+    if([FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.author.id)){
+        if(!VITC_ADMINS.includes(message.author.id))return
     }
     if(botRegexp.test(message.content)){
         message.reply("Hi! If you're wondering, my prefix is `"+prefix+"`! You can see my list of commands by doing `"+prefix+"help`! 💊")

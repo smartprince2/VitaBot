@@ -1,6 +1,7 @@
 import { Message } from "discord.js";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
+import { VITC_ADMINS } from "../constants";
 import discordqueue from "../discordqueue";
 import { parseDiscordUser } from "../util";
 
@@ -13,7 +14,7 @@ export default new class BlacklistCommand implements Command {
 
     async execute(message:Message, args: string[]){
         if(!message.guild)return
-        if(!message.member.roles.cache.has("862755971000172579") && !message.member.roles.cache.has("871009109237960704"))return
+        if(!VITC_ADMINS.includes(message.author.id))return
         
         const id = args[0]
         const user = id && (await parseDiscordUser(id))[0]

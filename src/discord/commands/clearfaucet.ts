@@ -12,7 +12,7 @@ import { durationUnits } from "../../common/util";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { tokenIds } from "../../common/constants";
-import { BOT_OWNER } from "../constants";
+import { BOT_OWNER, VITC_ADMINS } from "../constants";
 import { requestWallet } from "../../libwallet/http";
 
 export default new class ClearFaucetCommand implements Command {
@@ -96,7 +96,7 @@ export default new class ClearFaucetCommand implements Command {
                 if(message.reactions.cache.has("873558842699571220"))continue
             }
             message = await message.fetch()
-            const isAdmin = message.member?.roles.cache.has("862755971000172579") || message.member?.roles.cache.has("871009109237960704")
+            const isAdmin = VITC_ADMINS.includes(message.author.id)
             if(isAdmin)continue
             try{
                 await discordqueue.queueAction(message.author.id+".faucet", async () => {
