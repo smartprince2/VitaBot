@@ -82,18 +82,18 @@ Promise.all([
             // just stop here and keep the funds for later.
             if(totalValid.isEqualTo(0))return
             const vitcPayouts = []
-            const cap = new BigNumber(convert(7500, "VITC", "RAW"))
+            //const cap = new BigNumber(convert(7500, "VITC", "RAW"))
             let totalVitc = new BigNumber(0)
             for(const address of validAddresses){
-                let amount = new BigNumber(new BigNumber(votes.votes[address])
+                const amount = new BigNumber(new BigNumber(votes.votes[address])
                     .div(totalValid)
                     .times(viteBalance)
                     .times(100)
                     .toFixed()
                     .split(".")[0])
-                if(amount.isGreaterThan(cap)){
+                /*if(amount.isGreaterThan(cap)){
                     amount = cap
-                }
+                }*/
                 totalVitc = totalVitc.plus(amount)
                 vitcPayouts.push([
                     address,
