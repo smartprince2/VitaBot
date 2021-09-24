@@ -113,11 +113,13 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
             message
         ] = await Promise.all([
             getGiveawayEmbed(giveaway),
-            channel.messages.fetch(giveaway.bot_message_id)
+            channel.messages.fetch(giveaway.bot_message_id).catch(()=>null)
         ])
-        await message.edit({
-            embeds: [embed]
-        })
+        try{
+            await message.edit({
+                embeds: [embed]
+            })
+        }catch{}
         return embed
     })
 }
