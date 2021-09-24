@@ -6,6 +6,8 @@
 This is a Discord and Twitter tipbot for [Vitamin Coin 💊](https://vitamincoin.org).
 <br>
 The discord version is currently in their [official Discord server](https://discord.gg/sUvQufEqna)!
+<br>
+The twitter version is currently under ongoing tests, can be used at [@vitctipbot](https://twitter.com/vitctipbot)
 
 ## What is Vitamin Coin?
 [Vitamin Coin (VITC)](https://vitamincoin.org) is a cryptocurrency built on top of the [VITE](https://www.vite.org/) network (spoiler alert: it's the only healthy crypto).
