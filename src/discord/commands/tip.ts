@@ -9,7 +9,6 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Tip from "../../models/Tip";
-import { BOT_OWNER } from "../constants";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
 
 export default new class TipCommand implements Command {
@@ -43,9 +42,6 @@ Examples:
             recipientsRaw.push(currencyOrRecipient)
             currencyOrRecipient = "vitc"
         }
-        if(message.mentions.repliedUser){
-            recipientsRaw.push(message.mentions.repliedUser.id)
-        }
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
         if(command !== "tip" && currencyOrRecipient !== "VITC"){
             if(recipientsRaw.length > 0){
@@ -54,6 +50,9 @@ Examples:
                 message.reply(`Looks like you tried to use another currency than vitc. Please use the .tip command for this.`)
                 return
             }
+        }
+        if(message.mentions.repliedUser){
+            recipientsRaw.push(message.mentions.repliedUser.id)
         }
 
         if(!(currencyOrRecipient in tokenIds)){
