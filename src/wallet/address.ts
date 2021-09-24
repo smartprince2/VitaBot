@@ -2,6 +2,7 @@ import { Platform } from "../common/constants"
 import Address, { IAddress } from "../models/Address"
 import * as vite from "vitejs-notthomiz"
 
+const addressCache = new Map<string, IAddress>()
 
 export async function getVITEAddress(id:string, platform:Platform):Promise<IAddress>{
     const address = await Address.findOne({
@@ -13,8 +14,12 @@ export async function getVITEAddress(id:string, platform:Platform):Promise<IAddr
 }
 
 export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Promise<IAddress>{
+    const handle = `${id}.${platform}`
+    if(addressCache.has(handle))return addressCache.get(handle)
     try{
-        return await getVITEAddress(id, platform)
+        const address = await getVITEAddress(id, platform)
+        addressCache.set(handle, address)
+        return address
     }catch(err){
         // address doesn't exist in db, create it
         const wallet = vite.wallet.createWallet()
@@ -27,6 +32,7 @@ export async function getVITEAddressOrCreateOne(id:string, platform:Platform):Pr
                 `${id}.${platform}`
             ]
         })
+        addressCache.set(handle, address)
         return address
     }
 }
