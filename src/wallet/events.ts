@@ -20,7 +20,13 @@ export interface ReceiveTransaction extends Transaction {
     from_hash: string
 }
 
+export interface SBPMessageStats {
+    vitc: string,
+    vite: string
+}
+
 export default new VitaBotEventEmitter<{
     send_transaction: [SendTransaction],
-    receive_transaction: [ReceiveTransaction]
+    receive_transaction: [ReceiveTransaction],
+    sbp_message: [SBPMessageStats]
 }>()

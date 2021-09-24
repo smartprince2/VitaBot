@@ -1,6 +1,6 @@
 import WebSocket from "ws"
 import { VitaBotEventEmitter } from "../common/events"
-import { ReceiveTransaction, SendTransaction } from "../wallet/events"
+import { ReceiveTransaction, SBPMessageStats, SendTransaction } from "../wallet/events"
 
 enum States {
     CLOSED = "CLOSED",
@@ -12,6 +12,7 @@ enum States {
 export class WebsocketConnection extends VitaBotEventEmitter<{
     error: [Error],
     tx: [ReceiveTransaction|SendTransaction],
+    sbp_rewards: [SBPMessageStats]
     open: [],
     close: []
 }> {
@@ -81,6 +82,11 @@ export class WebsocketConnection extends VitaBotEventEmitter<{
             }
             case "tx": {
                 this.emit("tx", data.d)
+                break
+            }
+            case "sbp_rewards": {
+                this.emit("sbp_rewards", data.d)
+                break
             }
         }
     }

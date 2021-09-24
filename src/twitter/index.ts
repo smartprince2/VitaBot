@@ -138,6 +138,20 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
     
     await dbPromise
 
+    walletConnection.on("sbp_rewards", async message => {
+        const text = `Today's 💊 voter rewards were sent out this morning!
+
+**${convert(message.vite, "RAW", "VITE")} ${tokenNameToDisplayName("VITE")}**!
+
+And
+
+**${convert(message.vitc, "RAW", "VITC")} ${tokenNameToDisplayName("VITC")}**!
+
+Thanks to all our voters!`
+
+        await twitc.v1.tweet(text)
+    })
+
     walletConnection.on("tx", async transaction => {
         if(transaction.type !== "receive")return
         

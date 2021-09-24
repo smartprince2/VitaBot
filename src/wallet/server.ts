@@ -135,16 +135,24 @@ wss.on("connection", (ws, req) => {
         }catch{}
     })
 
-    const listener = tx => {
+    const txlistener = tx => {
         ws.send(JSON.stringify({
             op: "tx",
             d: tx
         }))
     }
-    events.on("receive_transaction", listener)
-    events.on("send_transaction", listener)
+    events.on("receive_transaction", txlistener)
+    events.on("send_transaction", txlistener)
+    const sbpMessageListener = msg => {
+        ws.send(JSON.stringify({
+            op: "sbp_rewards",
+            d: msg
+        }))
+    }
+    events.on("sbp_message", sbpMessageListener)
     ws.on("close", () => {
-        events.off("receive_transaction", listener)
-        events.off("send_transaction", listener)
+        events.off("receive_transaction", txlistener)
+        events.off("send_transaction", txlistener)
+        events.off("sbp_message", sbpMessageListener)
     })
 })

@@ -68,10 +68,10 @@ Promise.all([
                             address: address
                         })
                     }catch{}
-                    //continue
+                    continue
                 }else{
                     // if less than a day since registration.
-                    //if(sbpVote.since.getTime() > Date.now()-durationUnits.h)continue
+                    if(sbpVote.since.getTime() > Date.now()-durationUnits.h)continue
                 }
 
                 totalValid = totalValid.plus(votes.votes[address])
@@ -82,37 +82,47 @@ Promise.all([
             // just stop here and keep the funds for later.
             if(totalValid.isEqualTo(0))return
             const vitcPayouts = []
+
             //const cap = new BigNumber(convert(7500, "VITC", "RAW"))
             let totalVitc = new BigNumber(0)
             for(const address of validAddresses){
-                const amount = new BigNumber(new BigNumber(votes.votes[address])
+                const amount = new BigNumber(votes.votes[address])
                     .div(totalValid)
                     .times(viteBalance)
                     .times(100)
                     .toFixed()
-                    .split(".")[0])
+                    .split(".")[0]
+
+                // remove potential spams
+                if(amount === "0")continue
                 /*if(amount.isGreaterThan(cap)){
                     amount = cap
                 }*/
                 totalVitc = totalVitc.plus(amount)
                 vitcPayouts.push([
                     address,
-                    amount.toFixed()
+                    amount
                 ])
             }
             if(vitcBalance.isLessThan(totalVitc)){
-                console.error("Not enough vitc in balance. Needs "+convert(totalVitc, "RAW", "VITC"))
+                console.error("Not enough vitc in balance. Need "+convert(totalVitc, "RAW", "VITC"))
                 return
             }
             const payouts = []
+            let totalVite = new BigNumber(0)
             for(const address of validAddresses){
+                const amount = new BigNumber(votes.votes[address])
+                .div(totalValid)
+                .times(viteBalance)
+                .toFixed()
+                .split(".")[0]
+
+                // remove potential spams
+                if(amount === "0")continue
+                totalVite = totalVite.plus(amount)
                 payouts.push([
                     address,
-                    new BigNumber(votes.votes[address])
-                        .div(totalValid)
-                        .times(viteBalance)
-                        .toFixed()
-                        .split(".")[0]
+                    amount
                 ])
             }
             
@@ -121,7 +131,13 @@ Promise.all([
             await requestWallet("bulk_send", rewardAddress.address, payouts, tokenIds.VITE)
             await requestWallet("bulk_send", rewardAddress.address, vitcPayouts, tokenIds.VITC)
 
-            console.log("Sent ! In", (Date.now()-start)/1000)
+            console.log("Sent ! In", (Date.now()-start)/1000, "seconds !")
+            console.log("Sending tweets and messages about distribution...")
+            
+            await requestWallet("send_sbp_messages", {
+                vitc: totalVitc.toFixed(),
+                vite: totalVite.toFixed()
+            })
         })
     })
 })

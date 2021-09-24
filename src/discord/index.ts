@@ -1,5 +1,5 @@
 import "../common/load-env"
-import Discord, { Collection } from "discord.js"
+import Discord, { Collection, TextChannel } from "discord.js"
 import {promises as fs} from "fs"
 import { join } from "path"
 import Command from "./command"
@@ -59,6 +59,22 @@ client.on("ready", async () => {
     // every hour
     setTimeout(searchAirdrops, durationUnits.h)
 
+    walletConnection.on("sbp_rewards", async message => {
+        const channel = client.channels.cache.get("888496337799245874") as TextChannel
+        if(!channel)return
+        const text = `Today's 💊 voter rewards were sent out this morning!
+
+**${convert(message.vite, "RAW", "VITE")} ${tokenNameToDisplayName("VITE")}**!
+
+And
+
+**${convert(message.vitc, "RAW", "VITC")} ${tokenNameToDisplayName("VITC")}**!
+
+Thanks to all our voters!`
+
+        await channel.send(text)
+    })
+    
     walletConnection.on("tx", async transaction => {
         if(transaction.type !== "receive")return
         

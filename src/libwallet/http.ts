@@ -1,5 +1,5 @@
 import fetch from "node-fetch"
-import { ReceiveTransaction, SendTransaction } from "../wallet/events"
+import { ReceiveTransaction, SBPMessageStats, SendTransaction } from "../wallet/events"
 
 export type GetTokenResponse = {
     token_ids: {
@@ -41,6 +41,8 @@ export type GetSBPVotesResponse = {
     }
 }
 
+export type SendSBPMessagesResponse = Record<string, never>
+
 export interface WalletResponses {
     bulk_send: BulkSendResponse,
     get_balances: GetBalancesResponses,
@@ -48,7 +50,8 @@ export interface WalletResponses {
     send: SendResponse,
     get_account_block: GetAccountBlockResponse,
     get_account_blocks: GetAccountBlocksResponse,
-    get_sbp_votes: GetSBPVotesResponse
+    get_sbp_votes: GetSBPVotesResponse,
+    send_sbp_messages: SendSBPMessagesResponse
 }
 
 export interface WalletRequestParams {
@@ -58,7 +61,8 @@ export interface WalletRequestParams {
     send: [string, string, string, string],
     get_account_block: [string],
     get_account_blocks: [string, string, string, number],
-    get_sbp_votes: [string]
+    get_sbp_votes: [string],
+    send_sbp_messages: [SBPMessageStats]
 }
 
 export async function requestWallet<Action extends keyof WalletResponses>(action:Action, ...params: WalletRequestParams[Action]):Promise<WalletResponses[Action]>{
