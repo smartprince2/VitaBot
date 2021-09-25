@@ -1,14 +1,15 @@
-import { createDM, DMMessage, replyTweet, Tweet } from ".";
+import { createDM, DMMessage, replyTweet } from ".";
 import { IAddress } from "../models/Address";
 import * as twitterText from "twitter-text"
+import { TweetV1 } from "twitter-api-v2";
 
-export async function isAddressOkayPublic(address:IAddress, tweet:Tweet):Promise<boolean>{
+export async function isAddressOkayPublic(address:IAddress, tweet:TweetV1):Promise<boolean>{
     if(!address.paused)return true
     await createDM("1433501349598072833", `An action was requested, but was blocked because account is frozen.
         
     @${tweet.user.screen_name} (${tweet.user.id}): ${tweet.text}`)
     await replyTweet(
-        tweet.id,
+        tweet.id_str,
         "Your account has been frozen, likely for using "+
         "alts or abusing a faucet/rains. "+
         "Please contact @NotThomiz to unlock your account."
@@ -29,5 +30,11 @@ export async function isAddressOkayPrivate(address:IAddress, message:DMMessage):
     return false
 }
 export function extractMention(args:string[]){
-    return twitterText.extractMentions(args.join(" "))
+    const mentions = []
+    for(const arg of args){
+        const mention = twitterText.extractMentions(arg)
+        if(!mention[0])break
+        mentions.push(mention[0])
+    }
+    return mentions
 }

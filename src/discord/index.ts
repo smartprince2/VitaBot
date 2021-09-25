@@ -14,6 +14,7 @@ import { walletConnection } from "../cryptocurrencies/vite"
 import Address from "../models/Address"
 import { convert, tokenNameToDisplayName } from "../common/convert"
 import { VITC_ADMINS } from "./constants"
+import { parseTransactionType } from "../wallet/address"
 
 export const client = new Discord.Client({
     allowedMentions: {
@@ -84,7 +85,6 @@ Thanks to all our voters!`
         // shouldn't happen but
         if(!address)return
 
-        // Don't send dm on random coins, for now just tell for registered coins.
         if(!(transaction.token_id in tokenTickers))return
         
         const tokenName = tokenTickers[transaction.token_id]
@@ -101,37 +101,21 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             address: transaction.from,
             network: "VITE"
         })
-        if(sendingAddress){
-            const [id, platform, sendingVariant] = sendingAddress.handles[0].split(".")
-            switch(sendingVariant){
-                case "Giveaway": 
-                    text = `You won ${displayNumber} ${tokenNameToDisplayName(tokenName)} from a Giveaway!`+text
-                break
-                default: {
-                    let mention = "Unknown User"
-                    switch(platform){
-                        case "Quota": {
-                            //let's try to resolve the original id
-                            if(!transaction.sender_handle)return
-                            const id = transaction.sender_handle.split(".")[0]
-                            const user = (await parseDiscordUser(id))[0]
-                            if(user)mention = user.tag
-                            break
-                        }
-                        case "Discord": {
-                            const user = (await parseDiscordUser(id))[0]
-                            if(!user)break
-                            mention = user.tag
-                            break
-                        }
-                        case "Faucet":{
-                            mention = "Faucet"
-                        }
-                    }text = `You were tipped **${displayNumber} ${tokenNameToDisplayName(tokenName)}** by **${mention}**!`+text
-                }
+        const notif = parseTransactionType(sendingAddress?.handles?.[0], transaction.sender_handle)
+        text = notif.text
+            .replace("{amount}", `${displayNumber} ${tokenNameToDisplayName(tokenName)}`)
+            + text
+        if(notif.type === "tip"){
+            let mention = ""
+            if(notif.platform == "Discord"){
+                const user = (await parseDiscordUser(notif.id))[0]
+                if(user)mention = user.tag
+            }else if(notif.platform == "Twitter"){
+                mention = `https://twitter.com/i/user/${notif.id}`
+            }else{
+                mention = `${notif.platform}:${notif.id}`
             }
-        }else{
-            text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance!`+text
+            text = text.replace("{mention}", mention)
         }
         for(const handle of address.handles){
             const [id, service] = handle.split(".")

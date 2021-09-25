@@ -1,7 +1,6 @@
 import "../common/load-env"
 import { dbPromise } from "../common/load-db"
-import Twit from "twitter-api-v2"
-import Twitter from "twitter"
+import Twit, {ETwitterStreamEvent, TweetEntitiesV1} from "twitter-api-v2"
 import Command from "./command"
 import { promises as fs } from "fs"
 import { join } from "path"
@@ -11,18 +10,13 @@ import Address from "../models/Address"
 import { tokenTickers } from "../common/constants"
 import { convert, tokenNameToDisplayName } from "../common/convert"
 import { fetchUser } from "./users"
+import { isAuthorized, setAuthorized } from "./dmauthorization"
 
 export const twitc = new Twit({
     appKey: process.env.TWITTER_API_KEY,
     appSecret: process.env.TWITTER_API_SECRET,
     accessToken: process.env.TWITTER_ACCESS_TOKEN,
     accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET
-})
-export const client = new Twitter({
-    consumer_key: process.env.TWITTER_API_KEY,
-    consumer_secret: process.env.TWITTER_API_SECRET,
-    access_token_key: process.env.TWITTER_ACCESS_TOKEN,
-    access_token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 })
 
 export const commands = new Map<string, Command>()
@@ -80,42 +74,7 @@ export interface DMMessage {
     id: string,
     text: string,
     user: TwitterUser,
-    entities: Entities
-}
-
-export interface Tweet {
-    created_at: string,
-    id: string,
-    text: string,
-    source: string,
-    truncated: boolean,
-    in_reply_to_status_id: string,
-    in_reply_to_user_id: string,
-    in_reply_to_screen_name: string,
-    user: TwitterUser,
-    is_quote_status: boolean,
-    quote_count: number,
-    reply_count: number,
-    retweet_count: number,
-    favorite_count: number,
-    entities: Entities,
-    favorited: boolean,
-    retweeted: boolean,
-    filter_level: string,
-    lang: string,
-    timstamp_ms: string
-}
-
-export interface Entities {
-    hashtags: string[],
-    urls: string[],
-    user_mentions: {
-        screen_name: string,
-        name: string,
-        id: number,
-        indices: number[]
-    }[],
-    symbols: string[]
+    entities: TweetEntitiesV1
 }
 
 export const mention = "@vitctipbot"
@@ -214,24 +173,21 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             const [id, service] = handle.split(".")
             switch(service){
                 case "Twitter": {
+                    if(!await isAuthorized(id))break
                     createDM(id, text).catch(()=>{})
                     break
                 }
             }
         }
     })
-
+    const account = await twitc.v1.verifyCredentials()
     // normal tweets
-	const stream = client.stream("statuses/filter", {track: mention.slice(1)})
-    stream.on("data", async tweet => {
-        // fucking bad library
-        tweet.id = tweet.id_str
-        delete tweet.id_str
-        tweet.in_reply_to_status_id = tweet.in_reply_to_status_id_str
-        delete tweet.in_reply_to_status_id_str
-        tweet.user.id = tweet.user.id_str
-        delete tweet.user.id_str
-
+    const streamFilter = await twitc.v1.filterStream({
+        track: mention.slice(1)
+    })
+    streamFilter.autoReconnect = true
+    streamFilter.on(ETwitterStreamEvent.Data, async (tweet) => {
+        if(tweet.retweeted_status)return
         let tempArgs = tweet.text.split(/ +/g)
         const mentionIndexs = []
         // eslint-disable-next-line no-constant-condition
@@ -251,7 +207,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             
             const cmd = commands.get(command)
             if(!cmd)continue
-            if(!cmd.public)return
+            if(!cmd.public)continue
             const n = nonce++
     
             try{
@@ -263,40 +219,45 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                 }
                 console.error(`${command} Twitter ${n}`, err)
                 await replyTweet(
-                    tweet.id,
+                    tweet.id_str,
                     `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`
                 )
             }
         }
     })
-	stream.on("error", error => {
-        throw error
-	})
-
     const webhook = new Autohook({
         consumer_key: process.env.TWITTER_API_KEY,
         consumer_secret: process.env.TWITTER_API_SECRET,
         token: process.env.TWITTER_ACCESS_TOKEN,
         token_secret: process.env.TWITTER_ACCESS_TOKEN_SECRET,
-        env: "production",
+        ngrok_secret: process.env.NGROK_AUTH_TOKEN,
+        env: "prod",
         port: 1765
     })
     await webhook.removeWebhooks()
     
+    const prefixHelp = new Set<string>()
+
     webhook.on("event", async msg => {
         // likely typing in dms, we don't care about those.
         if(!("direct_message_events" in msg))return
         for(const event of msg.direct_message_events){
             if(event.type !== "message_create")continue
             const user = msg.users[event.message_create.sender_id]
-            if("@"+user.screen_name === mention)continue
+            if(user.id === account.id_str)continue
+            await setAuthorized(user.id)
             const message:DMMessage = {
                 entities: event.message_create.message_data.entities,
                 id: event.id,
                 text: event.message_create.message_data.text,
                 user: user
-            } 
+            }
             if(!message.text.startsWith(".")){
+                if(prefixHelp.has(user.id))continue
+                prefixHelp.add(user.id)
+                setTimeout(() => {
+                    prefixHelp.delete(user.id)
+                }, 10*60*1000)
                 createDM(message.user.id, "Hey 👋, If you're wondering, my prefix is ., you can see a list of commands by doing .help")
                 continue
             }
@@ -304,7 +265,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             const command = args.shift().toLowerCase()
 
             const cmd = commands.get(command)
-            if(!cmd?.dm)return
+            if(!cmd?.dm)continue
 
             const n = nonce++
 

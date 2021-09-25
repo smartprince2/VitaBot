@@ -1,4 +1,5 @@
-import { createDM, DMMessage, replyTweet, Tweet } from "..";
+import { TweetV1 } from "twitter-api-v2";
+import { createDM, DMMessage, replyTweet } from "..";
 import { tokenIds, tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -15,9 +16,9 @@ export default new class BalanceCommand implements Command {
     alias = ["balance", "bal"]
     usage = ""
 
-    async executePublic(tweet:Tweet){
-        await this.sendBalanceToUser(tweet.user.id)
-        await replyTweet(tweet.id, "I've sent your balance in your DM!")
+    async executePublic(tweet:TweetV1){
+        await this.sendBalanceToUser(tweet.user.id_str)
+        await replyTweet(tweet.id_str, "I've sent your balance in your DM!")
     }
 
     async executePrivate(message:DMMessage){

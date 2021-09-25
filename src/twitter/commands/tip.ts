@@ -6,10 +6,10 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
-import { createDM, DMMessage, mention, replyTweet, Tweet } from "..";
+import { createDM, DMMessage, mention, replyTweet } from "..";
 import { extractMention, isAddressOkayPrivate, isAddressOkayPublic } from "../util";
 import { fetchUserByUsername } from "../users";
-import { UserV2 } from "twitter-api-v2";
+import { TweetV1, UserV2 } from "twitter-api-v2";
 import twitterqueue from "../twitterqueue";
 
 export default new class TipCommand implements Command {
@@ -25,18 +25,18 @@ Give one ${tokenNameToDisplayName("BAN")} to a single person
 Give one ${tokenNameToDisplayName("VITC")} to more than one person
     ${mention} vitc 1 @NotThomiz @jen_wina`
 
-    alias = ["vitc", "v", "tip"]
+    alias = ["tip", "vitc", "v"]
     usage = "<amount> {currency} <...@someone>"
 
     public = true
     dm = true
 
-    async executePublic(tweet:Tweet, args: string[], command: string){
-        const tip = await this.sendTip(args, command, tweet.user.id, "public", tweet)
+    async executePublic(tweet:TweetV1, args: string[], command: string){
+        const tip = await this.sendTip(args, command, tweet.user.id_str, "public", tweet)
         if(!tip)return
         if(tip.type == "help")return help.executePublic(tweet, [command])
         const text = this.getText(tip)
-        await replyTweet(tweet.id, text)
+        await replyTweet(tweet.id_str, text)
     }
 
     async executePrivate(message:DMMessage, args:string[], command: string){
@@ -70,19 +70,19 @@ Give one ${tokenNameToDisplayName("VITC")} to more than one person
                 if(tip.recipients.length > 1){
                     return `You have sent ${tip.amount} ${tokenNameToDisplayName(tip.currency)} to ${tip.recipients.length} people each!
                     
-${tip.txs[0][0].hash}`
+https://vitescan.io/tx/${tip.txs[0][0].hash}`
                 }else{
                     return `You tipped ${tip.amount} ${tokenNameToDisplayName(tip.currency)} to @${tip.recipients[0].username}!
 
-${tip.txs[0][0].hash}`
+https://vitescan.io/tx/${tip.txs[0][0].hash}`
                 }
             }
         }
     }
 
-    async sendTip(args:string[], command:string, user_id:string, type: "public", tweet: Tweet)
+    async sendTip(args:string[], command:string, user_id:string, type: "public", tweet: TweetV1)
     async sendTip(args:string[], command:string, user_id:string, type: "private", message: DMMessage)
-    async sendTip(args:string[], command:string, user_id:string, type: "public"|"private", tm: Tweet|DMMessage){
+    async sendTip(args:string[], command:string, user_id:string, type: "public"|"private", tm: TweetV1|DMMessage){
         let [
             // eslint-disable-next-line prefer-const
             amount,
@@ -162,7 +162,7 @@ ${tip.txs[0][0].hash}`
                 if(!await isAddressOkayPrivate(address, tm as DMMessage))return
             break
             case "public":
-                if(!await isAddressOkayPublic(address, tm as Tweet))return
+                if(!await isAddressOkayPublic(address, tm as TweetV1))return
         }
 
         return viteQueue.queueAction(address.address, async () => {
