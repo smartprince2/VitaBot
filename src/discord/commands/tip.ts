@@ -43,16 +43,16 @@ Examples:
             currencyOrRecipient = "vitc"
         }
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
+        if(message.mentions.repliedUser){
+            recipientsRaw.push(message.mentions.repliedUser.id)
+        }
         if(command !== "tip" && currencyOrRecipient !== "VITC"){
-            if(recipientsRaw.length > 0){
+            if(message.mentions.repliedUser){
                 currencyOrRecipient = "VITC"
             }else{
                 message.reply(`Looks like you tried to use another currency than vitc. Please use the .tip command for this.`)
                 return
             }
-        }
-        if(message.mentions.repliedUser){
-            recipientsRaw.push(message.mentions.repliedUser.id)
         }
 
         if(!(currencyOrRecipient in tokenIds)){
