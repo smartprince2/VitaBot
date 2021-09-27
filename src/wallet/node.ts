@@ -6,6 +6,7 @@ import { getCurrentCycle } from "./cycle";
 import { IAddress } from "../models/Address";
 import PendingTransaction from "../models/PendingTransaction";
 import { processBulkTransactions } from "./send";
+import { waitPow } from "./powqueue";
 
 export const availableNodes = [
     ...new Set([
@@ -250,7 +251,7 @@ export async function sendTX(address:string, accountBlock:any):Promise<string>{
     ])
     const availableQuota = new BigNumber(quota.currentQuota)
     if(availableQuota.isLessThan(difficulty.requiredQuota)){
-        await accountBlock.PoW(difficulty.difficulty)
+        await waitPow(() => accountBlock.PoW(difficulty.difficulty))
     }
     await accountBlock.sign()
     
