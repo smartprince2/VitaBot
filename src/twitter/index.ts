@@ -98,13 +98,13 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
     await dbPromise
 
     walletConnection.on("sbp_rewards", async message => {
-        const text = `Today's 💊 voter rewards were sent out this morning!
+        const text = `Today's 💊 voter rewards were sent!
 
-**${convert(message.vite, "RAW", "VITE")} ${tokenNameToDisplayName("VITE")}**!
+${Math.round(parseFloat(convert(message.vite, "RAW", "VITE")))} ${tokenNameToDisplayName("VITE")}!
 
 And
 
-**${convert(message.vitc, "RAW", "VITC")} ${tokenNameToDisplayName("VITC")}**!
+${Math.round(parseFloat(convert(message.vitc, "RAW", "VITC")))} ${tokenNameToDisplayName("VITC")}!
 
 Thanks to all our voters!`
 
