@@ -49,6 +49,7 @@ Examples:
                 await message.react("❌")
                 await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
             }catch{}
+            return
         }
         const [
             amount,

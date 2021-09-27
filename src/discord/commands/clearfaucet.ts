@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import Command from "../command";
-import { FAUCET_CHANNEL_ID, FAUCET_PAYOUT } from "../faucet";
+import { FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD, FAUCET_PAYOUT, FAUCET_PAYOUT_VITAMINHEAD } from "../faucet";
 import BigNumber from "bignumber.js"
 import help from "./help";
 import { convert } from "../../common/convert";
@@ -41,7 +41,7 @@ export default new class ClearFaucetCommand implements Command {
             await help.execute(message, [command])
             return
         }
-        let rawAmount = FAUCET_PAYOUT
+        let rawAmount = message.channel.id === FAUCET_CHANNEL_ID_VITAMINHEAD ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
         
         if(amountRaw){
             if(!/^\d+(\.\d+)?$/.test(amountRaw)){

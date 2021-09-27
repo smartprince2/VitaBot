@@ -63,17 +63,18 @@ client.on("ready", async () => {
     walletConnection.on("sbp_rewards", async message => {
         const channel = client.channels.cache.get("888496337799245874") as TextChannel
         if(!channel)return
-        const text = `Today's 💊 voter rewards were sent out this morning!
+        const text = `Today's 💊 voter rewards were sent!
 
-**${convert(message.vite, "RAW", "VITE")} ${tokenNameToDisplayName("VITE")}**!
+**${Math.round(parseFloat(convert(message.vite, "RAW", "VITE")))} ${tokenNameToDisplayName("VITE")}**!
 
 And
 
-**${convert(message.vitc, "RAW", "VITC")} ${tokenNameToDisplayName("VITC")}**!
+**${Math.round(parseFloat(convert(message.vitc, "RAW", "VITC")))} ${tokenNameToDisplayName("VITC")}**!
 
 Thanks to all our voters!`
 
-        await channel.send(text)
+        const msg = await channel.send(text)
+        await msg.crosspost()
     })
     
     walletConnection.on("tx", async transaction => {
