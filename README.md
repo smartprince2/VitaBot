@@ -28,7 +28,7 @@ A dedicated [VITE](https://www.vite.org/) wallet will be created automatically f
 Otherwise, you can still use the `.help` command to get a list of available commands.
 
 ## Add this bot to your server
-If you want to add this bot in your own server, simply click [here](https://discord.com/api/oauth2/authorize?client_id=872912021379752026&permissions=388160&scope=bot).
+If you want to add this bot in your own server, simply click [here](https://discord.com/api/oauth2/authorize?client_id=891314894413127740&permissions=388160&scope=bot).
 <br>
 You won't have access to every functionality of the bot like giveaways and rains, but tipping will work no matter the server.
 
