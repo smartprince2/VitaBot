@@ -13,10 +13,10 @@ export default class ActionQueue<keyType = any> {
         }
         const acc = this.actionQueues.get(key)
         acc.queue.push(()=>nextStep().then(resolve, reject))
-        let resolve:((value?:unknown)=>void)
+        let resolve:((value?:T)=>void)
         let reject:((error?:Error)=>void)
         // eslint-disable-next-line no-async-promise-executor
-        return new Promise(async (r, j) => {
+        return new Promise<T>(async (r, j) => {
             resolve = r
             reject = j
 

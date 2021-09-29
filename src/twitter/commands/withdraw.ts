@@ -56,6 +56,10 @@ Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet
             }
         }
         if(!addr)return help.executePrivate(message, [command])
+        if(!vite.wallet.isValidAddress(addr)){
+            await createDM(message.user.id, `${addr} is not a valid vite address.`)
+            return
+        }
 
         const address = await twitterqueue.queueAction(message.user.id, async () => {
             return getVITEAddressOrCreateOne(message.user.id, "Twitter")

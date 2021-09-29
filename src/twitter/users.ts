@@ -9,6 +9,7 @@ export function fetchUser(user_id: string):Promise<UserV2>{
 
         const user = await twitc.v2.user(user_id)
         users.set(user_id, user.data)
+        usersMentionToId.set(user.data.username, user.data.id)
         return user.data
     })
 }
@@ -19,7 +20,7 @@ export function fetchUserByUsername(username:string){
         if(usersMentionToId.has(username))return fetchUser(usersMentionToId.get(username))
 
         const user = await twitc.v2.userByUsername(username)
-        usersMentionToId.set(username, user.data.id)
+        usersMentionToId.set(user.data.username, user.data.id)
         users.set(user.data.id, user.data)
         return user.data
     })

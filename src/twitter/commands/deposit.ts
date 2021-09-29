@@ -1,22 +1,16 @@
-import { DMMessage, replyTweet, twitc } from "..";
+import { DMMessage, twitc } from "..";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import twitterqueue from "../twitterqueue";
 import * as qrcode from "qrcode"
-import { TweetV1 } from "twitter-api-v2";
 
 export default new class DepositCommand implements Command {
-    public = true
+    public = false
     dm = true
     description = "Get your deposit address"
     extended_description = `Get your deposit address`
     alias = ["deposit"]
     usage = ""
-
-    async executePublic(data:TweetV1){
-        await this.sendDepositAddress(data.user.id_str)
-        await replyTweet(data.id_str, "I've sent your deposit address in your DM!")
-    }
 
     async executePrivate(message:DMMessage){
         await this.sendDepositAddress(message.user.id)

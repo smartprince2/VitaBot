@@ -1,5 +1,4 @@
-import { TweetV1 } from "twitter-api-v2";
-import { createDM, DMMessage, replyTweet } from "..";
+import { createDM, DMMessage } from "..";
 import { tokenIds, tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -9,17 +8,12 @@ import Command from "../command";
 import twitterqueue from "../twitterqueue";
 
 export default new class BalanceCommand implements Command {
-    public = true
+    public = false
     dm = true
     description = "Display your balance"
     extended_description = `Display your current balance`
     alias = ["balance", "bal"]
     usage = ""
-
-    async executePublic(tweet:TweetV1){
-        await this.sendBalanceToUser(tweet.user.id_str)
-        await replyTweet(tweet.id_str, "I've sent your balance in your DM!")
-    }
 
     async executePrivate(message:DMMessage){
         await this.sendBalanceToUser(message.user.id)

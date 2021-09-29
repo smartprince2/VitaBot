@@ -3,7 +3,7 @@ import { commands, createDM, DMMessage, rawCommands, replyTweet } from "..";
 import Command from "../command";
 
 export default new class HelpCommand implements Command {
-    public = true
+    public = false
     dm = true
     description = "See the help menu"
     extended_description = `This is the help command. You'll find a lot of informations on other commands of the bot.

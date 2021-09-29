@@ -258,7 +258,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                 setTimeout(() => {
                     prefixHelp.delete(user.id)
                 }, 10*60*1000)
-                createDM(message.user.id, "Hey 👋, If you're wondering, my prefix is ., you can see a list of commands by doing .help")
+                createDM(message.user.id, "Hey 👋, The prefix for all my commands is period (.) You can see a list of all commands by sending .help")
                 continue
             }
             const args = message.text.slice(1).trim().split(/ +/g)
