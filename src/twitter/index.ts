@@ -186,16 +186,18 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
         track: mention.slice(1)
     })
     streamFilter.autoReconnect = true
+    streamFilter.autoReconnectRetries = Infinity
     streamFilter.on(ETwitterStreamEvent.Data, async (tweet) => {
         if(tweet.retweeted_status)return
-        let tempArgs = tweet.text.split(/ +/g)
+        const tempArgs = tweet.text.toLowerCase().split(/ +/g)
         const mentionIndexs = []
         // eslint-disable-next-line no-constant-condition
         while(true){
             if(!tempArgs.length)break
             const mentionIndex = tempArgs.indexOf(mention)
             if(mentionIndex < 0)break
-            tempArgs = tempArgs.slice(mentionIndex+1)
+            // remove the mention to avoid loops
+            tempArgs[mentionIndex] = ""
             mentionIndexs.push(mentionIndex)
         }
         

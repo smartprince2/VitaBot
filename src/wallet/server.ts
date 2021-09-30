@@ -72,10 +72,11 @@ const app = express()
             const result = await action(...(req.body.params || []))
             res.status(200).send(result)
         }catch(err){
+            console.error(err)
             res.status(500).send({
                 error: {
                     name: err?.name || "Error",
-                    message: err?.message || err ? String(err) : ""
+                    message: err?.message || err ? JSON.stringify(err) : ""
                 }
             })
         }

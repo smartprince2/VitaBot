@@ -129,6 +129,7 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
             promises.push((async () => {
                 try{
                     const user = await fetchUserByUsername(mention)
+                    if(!user)return
                     if(user.id === user_id)return
                     if(recipients.find(e => e.id === user.id))return
                     recipients.push(user)

@@ -10,13 +10,8 @@ export async function isAuthorized(user_id:string):Promise<boolean>{
         const auth = await DMAuthorization.findOne({
             user_id: user_id
         })
-        if(!auth){
-            cache.set(user_id, false)
-            return false
-        }else{
-            cache.set(user_id, true)
-            return true
-        }
+        cache.set(user_id, !!auth)
+        return !!auth
     })
 }
 
