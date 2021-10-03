@@ -2,26 +2,22 @@
 ![Pull Requests](https://img.shields.io/github/issues-pr-raw/JeanOUINA/VitaBot)
 [![Discord](https://img.shields.io/discord/862416292760649768?logo=discord&style=flat-square&color=%23fffd6c)](https://discord.gg/sUvQufEqna)
 ---
-# VitaBot
-This is a Discord and Twitter tipbot for [Vitamin Coin 💊](https://vitamincoin.org).
+# VitaBot Discord
+This is the Discord tip bot for [Vitamin Coin 💊](https://vitamincoin.org). 
 <br>
-The discord version is currently in their [official Discord server](https://discord.gg/sUvQufEqna)!
-<br>
-The twitter version is currently under ongoing tests, can be used at [@vitctipbot](https://twitter.com/vitctipbot)
+You can see it in action in [Vitamin Coin's discord server](https://discord.gg/sUvQufEqna)
 
 ## What is Vitamin Coin?
 [Vitamin Coin (VITC)](https://vitamincoin.org) is a cryptocurrency built on top of the [VITE](https://www.vite.org/) network (spoiler alert: it's the only healthy crypto).
+
 
 ## What can it do?
 This bot can store, tip, and send (incl. rains, giveaways and airdrops) [VITC](https://vitamincoin.org) and all other tokens on the [VITE](https://www.vite.org/) network!
 <br>
 Every transaction is done on-chain, seeds are stored in a database.
 
-*PS: This bot uses special vitamins to make transations go faster :) (let's call that "plus vite")*
-
 ## How to use this bot?
-
-You can tip users by doing `.v <amount> <@mention/id>` (e.g `.v 1337 @Not Thomiz#001`)
+You can tip users by doing `.v <amount> <@mention/id>` (e.g `.v 1337 @NotThomiz`)
 
 A dedicated [VITE](https://www.vite.org/) wallet will be created automatically for you upon receiving a tip or running the `.deposit` command if you don't already have one.
 

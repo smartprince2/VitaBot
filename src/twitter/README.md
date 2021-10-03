@@ -1,38 +1,27 @@
 ![Issues](https://img.shields.io/github/issues-raw/JeanOUINA/VitaBot)
 ![Pull Requests](https://img.shields.io/github/issues-pr-raw/JeanOUINA/VitaBot)
-[![Discord](https://img.shields.io/discord/862416292760649768?logo=discord&style=flat-square&color=%23fffd6c)](https://discord.gg/sUvQufEqna)
 ---
-# VitaBot
-This is a Discord and Twitter tipbot for [Vitamin Coin 💊](https://vitamincoin.org).
+# VitaBot Twitter
+This is the Twitter tip bot for [Vitamin Coin 💊](https://vitamincoin.org). 
 <br>
-The discord version is currently in their [official Discord server](https://discord.gg/sUvQufEqna)!
-<br>
-The twitter version is currently under ongoing tests, can be used at [@vitctipbot](https://twitter.com/vitctipbot)
+You can see it in action at [@vitctipbot](https://twitter.com/vitctipbot).
 
 ## What is Vitamin Coin?
 [Vitamin Coin (VITC)](https://vitamincoin.org) is a cryptocurrency built on top of the [VITE](https://www.vite.org/) network (spoiler alert: it's the only healthy crypto).
+
 
 ## What can it do?
 This bot can store, tip, and send (incl. rains, giveaways and airdrops) [VITC](https://vitamincoin.org) and all other tokens on the [VITE](https://www.vite.org/) network!
 <br>
 Every transaction is done on-chain, seeds are stored in a database.
 
-*PS: This bot uses special vitamins to make transations go faster :) (let's call that "plus vite")*
-
 ## How to use this bot?
 
-You can tip users by doing `.v <amount> <@mention/id>` (e.g `.v 1337 @Not Thomiz#001`)
+You can tip users by doing `@vitctipbot tip <amount> <currency> <@mention/id>` (e.g `@vitctipbot tip 1337 vitc @NotThomiz`)
 
 A dedicated [VITE](https://www.vite.org/) wallet will be created automatically for you upon receiving a tip or running the `.deposit` command if you don't already have one.
 
 Otherwise, you can still use the `.help` command to get a list of available commands.
-
-## Add this bot to your server
-If you want to add this bot in your own server, simply click [here](https://discord.com/oauth2/authorize?client_id=891314894413127740&permissions=515399609408&scope=bot).
-<br>
-You won't have access to every functionality of the bot like giveaways and rains, but tipping will work no matter the server.
-
-If you have special requests for your server, or want me to enable a feature, please [DM me on Discord](https://discord.com/users/696481194443014174).
 
 ## Should I run my own instance of the bot?
 If you want to run a parallel [VITC](https://vitamincoin.org) tipbot, probably not.
