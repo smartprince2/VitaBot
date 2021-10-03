@@ -11,6 +11,7 @@ import { tokenTickers } from "../common/constants"
 import { convert, tokenNameToDisplayName } from "../common/convert"
 import { fetchUser } from "./users"
 import { isAuthorized, setAuthorized } from "./dmauthorization"
+import { parseTransactionType } from "../wallet/address"
 
 export const twitc = new Twit({
     appKey: process.env.TWITTER_API_KEY,
@@ -137,37 +138,26 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             address: transaction.from,
             network: "VITE"
         })
-        if(sendingAddress){
-            const [id, platform, sendingVariant] = sendingAddress.handles[0].split(".")
-            switch(sendingVariant){
-                case "Giveaway": 
-                    text = `You won ${displayNumber} ${tokenNameToDisplayName(tokenName)} from a Giveaway!`+text
-                break
-                default: {
-                    let mention = "Unknown User"
-                    switch(platform){
-                        case "Quota": {
-                            //let's try to resolve the original id
-                            if(!transaction.sender_handle)return
-                            const id = transaction.sender_handle.split(".")[0]
-                            const user = await fetchUser(id)
-                            if(user)mention = "@"+user.username
-                            break
-                        }
-                        case "Twitter": {
-                            const user = await fetchUser(id)
-                            if(!user)break
-                            mention = "@"+user.username
-                            break
-                        }
-                        case "Faucet":{
-                            mention = "Faucet"
-                        }
-                    }text = `You were tipped ${displayNumber} ${tokenNameToDisplayName(tokenName)} by ${mention}!`+text
+        const notif = parseTransactionType(sendingAddress?.handles?.[0], transaction.sender_handle)
+        text = notif.text
+            .replace(/\*+/g, "")
+            .replace("{amount}", `${displayNumber} ${tokenNameToDisplayName(tokenName)}`)
+            + text
+        if(notif.type === "tip"){
+            let mention = ""
+            if(notif.platform == "Discord"){
+                mention = `https://discord.com/users/${notif.id}`
+            }else if(notif.platform == "Twitter"){
+                try{
+                    const user = await fetchUser(notif.id)
+                    mention = `@${user.username}`
+                }catch{
+                    mention = `https://twitter.com/i/user/${notif.id}`
                 }
+            }else{
+                mention = `${notif.platform}:${notif.id}`
             }
-        }else{
-            text = `${displayNumber} ${tokenNameToDisplayName(tokenName)} were deposited in your account's balance!`+text
+            text = text.replace("{mention}", mention)
         }
         for(const handle of address.handles){
             const [id, service] = handle.split(".")

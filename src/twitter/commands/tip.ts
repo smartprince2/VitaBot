@@ -100,12 +100,19 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
             recipientsRaw.push(currencyOrRecipient)
             currencyOrRecipient = "vitc"
         }
+        if(recipientsRaw.length === 0 && type === "public"){
+            // tip the author of the tweet above us.
+            const tweet = tm as TweetV1
+            if(tweet.in_reply_to_user_id_str){
+                // autofill the user's name
+                recipientsRaw.unshift(`@${tweet.in_reply_to_screen_name}`)
+            }
+        }
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
         if(command !== "tip" && currencyOrRecipient !== "VITC"){
-            if(recipientsRaw.length === 0)return {
+            return {
                 type: "currency_not_vitc"
             }
-            currencyOrRecipient = "VITC"
         }
 
         if(!(currencyOrRecipient in tokenIds))return {
@@ -138,7 +145,16 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
         }
         await Promise.all(promises)
         if(recipients.length === 0){
-            return {
+            const tweet = tm as TweetV1
+            let shouldHelp = true
+            if(type === "public" && tweet.in_reply_to_screen_name){
+                const user = await fetchUserByUsername(tweet.in_reply_to_screen_name)
+                if(user && user.id !== user_id){
+                    recipients.push(user)
+                    shouldHelp = false
+                }
+            }
+            if(shouldHelp)return {
                 type: "help"
             }
         }
