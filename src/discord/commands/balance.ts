@@ -31,7 +31,7 @@ export default new class BalanceCommand implements Command {
             const displayToken = tokenTickers[tokenId] || tokenId
             const displayBalance = convert(balances[tokenId], "RAW", displayToken as any)
 
-            return `[**${tokenNameToDisplayName(displayToken)}**](https://vitescan.io/token/${tokenId}): ${displayBalance}`
+            return `[**${tokenNameToDisplayName(displayToken)}**](https://vitescan.io/token/${tokenId}): ${displayBalance} ${tokenTickers[tokenId] || ""}`
         }).join("\n"))
         await message.author.send({
             embeds: [embed]

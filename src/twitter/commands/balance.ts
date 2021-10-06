@@ -1,4 +1,4 @@
-import { createDM, DMMessage } from "..";
+import { DMMessage, twitc } from "..";
 import { tokenIds, tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -30,7 +30,9 @@ export default new class BalanceCommand implements Command {
 
         if(!balances[tokenIds.VITC])balances[tokenIds.VITC] = "0"
 
-        await createDM(user_id, `Your current balance:
+        await twitc.v1.sendDm({
+            recipient_id: user_id, 
+            text: `Your current balance:
         
 ${Object.keys(balances).map(tokenId => {
     const displayToken = tokenTickers[tokenId] || tokenId
@@ -39,6 +41,7 @@ ${Object.keys(balances).map(tokenId => {
     return `${tokenNameToDisplayName(displayToken)}: ${displayBalance}`
 }).join("\n")}
 
-View on vitescan: https://vitescan.io/address/${address.address}`)
+View on vitescan: https://vitescan.io/address/${address.address}`
+        })
     }
 }

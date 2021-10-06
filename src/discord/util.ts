@@ -10,11 +10,11 @@ export function generateDefaultEmbed(){
     }))
 }
 
-const USER_PATTERN = /^<@!?(?<id>\d{17,19})>$/
-const USER_PATTERN_MULTI = /<@!?\d{17,19}>/g
-const ID_PATTERN = /^\d{17,19}$/
-const ROLE_PATTERN = /^<@&?(?<id>\d{17,19})>$/
-const ROLE_PATTERN_MULTI = /<@&?\d{17,19}>/g
+export const USER_PATTERN = /^<@!?(?<id>\d{17,19})>$/
+export const USER_PATTERN_MULTI = /<@!?\d{17,19}>/g
+export const ID_PATTERN = /^\d{17,19}$/
+export const ROLE_PATTERN = /^<@&?(?<id>\d{17,19})>$/
+export const ROLE_PATTERN_MULTI = /<@&?\d{17,19}>/g
 export function isDiscordUserArgument(arg: string){
     return USER_PATTERN_MULTI.test(arg) || ID_PATTERN.test(arg) || ROLE_PATTERN_MULTI.test(arg)
 }

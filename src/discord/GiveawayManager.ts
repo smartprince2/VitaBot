@@ -125,11 +125,14 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
 }
 
 export const giveaway_channels = {
-    "862416292760649768": "862416292760649773 870900472557502474 877465940474888212 878373710174773308 872195770076512366 884088302020481074".split(" ")
+    "862416292760649768": "862416292760649773 870900472557502474 877465940474888212 878373710174773308 884088302020481074 871022892832407602".split(" ")
+}
+export const giveaway_posting_channel = {
+    "862416292760649768": "884088302020481074"
 }
 
 export async function startGiveaway(giveaway:IGiveaway){
-    const channel = client.channels.cache.get(giveaway.channel_id) as TextChannel
+    const channel = client.channels.cache.get(giveaway_posting_channel[giveaway.guild_id]||giveaway.channel_id) as TextChannel
     if(!channel){
         await giveaway.delete()
         watchingGiveawayMap.delete(giveaway.message_id)
@@ -142,13 +145,14 @@ export async function startGiveaway(giveaway:IGiveaway){
             embeds: [embed]
         })
         giveaway.bot_message_id = message.id
+        giveaway.channel_id = message.channelId
         await giveaway.save()
         await Promise.all((giveaway_channels[channel.guildId] || []).map(async (id:string) => {
             if(id === giveaway.channel_id)return
             const channel = client.channels.cache.get(id) as TextChannel
             if(!channel)return
             await channel.send({
-                embeds: [embed]
+                content: `A giveaway has started in <#${message.channel.id}>, link: https://discord.com/channels/${message.guildId}/${message.channelId}/${message.id}`
             })
         }))
     }catch(err){

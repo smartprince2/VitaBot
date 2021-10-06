@@ -24,7 +24,7 @@ Examples:
 **Give one ${tokenNameToDisplayName("VITC")} to more than one person**
 .vitc 1 <@112006418676113408> <@862414189464256542>`
 
-    alias = ["vitc", "v", "tip"]
+    alias = ["tip", "vitc", "v"]
     usage = "<amount> {currency} <...@someone>"
 
     async execute(message:Message, args: string[], command: string){

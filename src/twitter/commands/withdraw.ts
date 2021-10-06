@@ -1,4 +1,4 @@
-import { createDM, DMMessage } from "..";
+import { DMMessage, twitc } from "..";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import twitterqueue from "../twitterqueue";
@@ -51,13 +51,19 @@ Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet
                 isRawTokenId = true
                 currencyOrRecipient = currencyOrRecipient.toLowerCase()
             }else{
-                await createDM(message.user.id, `The token ${currencyOrRecipient} isn't supported. if you think this is an error from the bot, contact @NotThomiz.`)
+                await twitc.v1.sendDm({
+                    recipient_id: message.user.id,
+                    text: `The token ${currencyOrRecipient} isn't supported. if you think this is an error from the bot, contact @NotThomiz.`
+                })
                 return
             }
         }
         if(!addr)return help.executePrivate(message, [command])
         if(!vite.wallet.isValidAddress(addr)){
-            await createDM(message.user.id, `${addr} is not a valid vite address.`)
+            await twitc.v1.sendDm({
+                recipient_id: message.user.id,
+                text: `${addr} is not a valid vite address.`
+            })
             return
         }
 
@@ -71,11 +77,11 @@ Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet
             const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
             const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
-            if(balance.isLessThan(amount)){
-                await createDM(
-                    message.user.id,
-                    `You don't have enough money to cover this withdraw. You need ${convert(amount, "RAW", currencyOrRecipient)} ${currencyOrRecipient} but you only have ${convert(balance, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in your balance.`
-                )
+            if(balance.isLessThan(amount) || balance.isEqualTo(0)){
+                await twitc.v1.sendDm({
+                    recipient_id: message.user.id,
+                    text: `You don't have enough money to cover this withdraw. You need ${convert(amount, "RAW", currencyOrRecipient)} ${currencyOrRecipient} but you only have ${convert(balance, "RAW", currencyOrRecipient)} ${currencyOrRecipient} in your balance.`
+                })
                 return
             }
             const tx = await requestWallet(
@@ -85,12 +91,12 @@ Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet
                 amount.toFixed(), 
                 token
             )
-            await createDM(
-                message.user.id,
-                `Your withdraw was processed!
+            await twitc.v1.sendDm({
+                recipient_id: message.user.id,
+                text: `Your withdraw was processed!
 
 View transaction on vitescan: https://vitescan.io/tx/${tx.hash}`
-            )
+            })
         })
     }
 }

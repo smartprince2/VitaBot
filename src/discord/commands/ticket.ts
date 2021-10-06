@@ -45,6 +45,7 @@ ${process.env.DISCORD_PREFIX}ticket`
                 await message.delete()
                 await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
             }catch{}
+            return
         }
         const giveaway = await Giveaway.findOne({
             guild_id: message.guildId

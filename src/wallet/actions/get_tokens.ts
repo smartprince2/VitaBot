@@ -1,6 +1,7 @@
-import { tokenDecimals, tokenIds, tokenNames, tokenTickers } from "../node";
+import { tokenDecimals, tokenIds, tokenNames, tokenPromise, tokenTickers } from "../node";
 
-export default function getTokens(){
+export default async function getTokens(){
+    await tokenPromise
     return {
         token_ids: tokenIds,
         token_names: tokenNames,
