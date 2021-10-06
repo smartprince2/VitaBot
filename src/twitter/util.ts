@@ -1,4 +1,4 @@
-import { createDM, DMMessage, replyTweet } from ".";
+import { createDM, DMMessage, twitc } from ".";
 import { IAddress } from "../models/Address";
 import * as twitterText from "twitter-text"
 import { TweetV1 } from "twitter-api-v2";
@@ -8,11 +8,11 @@ export async function isAddressOkayPublic(address:IAddress, tweet:TweetV1):Promi
     await createDM("1433501349598072833", `An action was requested, but was blocked because account is frozen.
         
     @${tweet.user.screen_name} (${tweet.user.id}): ${tweet.text}`)
-    await replyTweet(
-        tweet.id_str,
+    await twitc.v1.reply(
         "Your account has been frozen, likely for using "+
         "alts or abusing a faucet/rains. "+
-        "Please contact @NotThomiz to unlock your account."
+        "Please contact @NotThomiz to unlock your account.",
+        tweet.id_str
     )
     return false
 }

@@ -23,18 +23,6 @@ export const twitc = new Twit({
 export const commands = new Map<string, Command>()
 export const rawCommands = [] as Command[]
 
-export function replyTweet(reply_to: string, text: string){
-    return twitc.v1.reply(text, reply_to)
-}
-
-// Broken typing on this because this payload won't work with normal Twitter, and needs twitc
-export async function createDM(recipient_id: string, text: string):Promise<any>{
-    return twitc.v1.sendDm({
-        recipient_id: recipient_id,
-        text: text
-    })
-}
-
 export interface TwitterUser {
     id: string,
     name: string,
@@ -164,7 +152,10 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             switch(service){
                 case "Twitter": {
                     if(!await isAuthorized(id))break
-                    createDM(id, text).catch(()=>{})
+                    await twitc.v1.sendDm({
+                        recipient_id: id,
+                        text: text
+                    })
                     break
                 }
             }
@@ -210,9 +201,9 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                     err = JSON.stringify(err.error, null, "    ")
                 }
                 console.error(`${command} Twitter ${n}`, err)
-                await replyTweet(
-                    tweet.id_str,
-                    `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`
+                await twitc.v1.reply(
+                    `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`, 
+                    tweet.id_str
                 )
             }
         }
@@ -250,7 +241,10 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                 setTimeout(() => {
                     prefixHelp.delete(user.id)
                 }, 10*60*1000)
-                createDM(message.user.id, "Hey 👋, The prefix for all my commands is period (.) You can see a list of all commands by sending .help")
+                await twitc.v1.sendDm({
+                    recipient_id: message.user.id,
+                    text: "Hey 👋, The prefix for all my commands is period (.) You can see a list of all commands by sending .help"
+                })
                 continue
             }
             const args = message.text.slice(1).trim().split(/ +/g)
@@ -269,7 +263,10 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                     err = JSON.stringify(err.error, null, "    ")
                 }
                 console.error(`${command} Twitter ${n}`, err)
-                await createDM(user.id, `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`)
+                await twitc.v1.sendDm({
+                    recipient_id: user.id,
+                    text: `An unknown error occured. Please report that to devs (@NotThomiz): Execution ID ${n}`
+                })
             }
         }
     })

@@ -6,7 +6,7 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
-import { createDM, DMMessage, mention, replyTweet } from "..";
+import { createDM, DMMessage, mention, twitc } from "..";
 import { extractMention, isAddressOkayPrivate, isAddressOkayPublic } from "../util";
 import { fetchUserByUsername } from "../users";
 import { TweetV1, UserV2 } from "twitter-api-v2";
@@ -36,7 +36,7 @@ Give one ${tokenNameToDisplayName("VITC")} to more than one person
         if(!tip)return
         if(tip.type == "help")return help.executePublic(tweet, [command])
         const text = this.getText(tip)
-        await replyTweet(tweet.id_str, text)
+        await twitc.v1.reply(text, tweet.id_str)
     }
 
     async executePrivate(message:DMMessage, args:string[], command: string){

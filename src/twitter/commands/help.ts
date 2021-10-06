@@ -1,5 +1,5 @@
 import { TweetV1 } from "twitter-api-v2";
-import { commands, createDM, DMMessage, rawCommands, replyTweet } from "..";
+import { commands, createDM, DMMessage, rawCommands, twitc } from "..";
 import Command from "../command";
 
 export default new class HelpCommand implements Command {
@@ -19,7 +19,7 @@ Example:
 
     async executePublic(data:TweetV1, args: string[]){
         await this.sendHelp(data.user.id_str, args[0])
-        await replyTweet(data.id_str, "I've sent the help menu in your DM!")
+        await twitc.v1.reply("I've sent the help menu in your DM!", data.id_str)
     }
 
     async executePrivate(message:DMMessage, args: string[]){
