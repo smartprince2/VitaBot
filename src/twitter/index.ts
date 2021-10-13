@@ -19,6 +19,7 @@ export const twitc = new Twit({
     accessToken: process.env.TWITTER_ACCESS_TOKEN,
     accessSecret: process.env.TWITTER_ACCESS_TOKEN_SECRET
 })
+export const twitcBearer = new Twit(process.env.TWITTER_BEARER_TOKEN)
 
 export const commands = new Map<string, Command>()
 export const rawCommands = [] as Command[]
@@ -161,16 +162,47 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             }
         }
     })
-    const account = await twitc.v1.verifyCredentials()
+    const [
+        account,
+        rules
+    ] = await Promise.all([
+        twitc.v1.verifyCredentials(),
+        twitcBearer.v2.streamRules()
+    ])
+    
+    if(rules.data?.length){
+        await twitcBearer.v2.updateStreamRules({
+            delete: {
+                ids: rules.data.map(e => e.id)
+            }
+        })
+    }
+    await twitcBearer.v2.updateStreamRules({
+        add: [
+            {
+                value: mention,
+                tag: "mention"
+            }
+        ]
+    })
+
     // normal tweets
-    const streamFilter = await twitc.v1.filterStream({
-        track: mention.slice(1)
+    const streamFilter = await twitcBearer.v2.searchStream({
+        expansions: [
+            "author_id",
+            "in_reply_to_user_id",
+            "referenced_tweets.id"
+        ]
     })
     streamFilter.autoReconnect = true
     streamFilter.autoReconnectRetries = Infinity
-    streamFilter.on(ETwitterStreamEvent.Data, async (tweet) => {
-        if(tweet.retweeted_status)return
-        const tempArgs = tweet.text.toLowerCase().split(/ +/g)
+    streamFilter.on(ETwitterStreamEvent.Data, async (data) => {
+        const tweet = data.data
+        // retweet
+        if(tweet.referenced_tweets?.find(e => e.type === "retweeted"))return
+        if(tweet.author_id === account.id_str)
+        console.log(tweet)
+        const tempArgs = tweet.text.toLowerCase().split(/( |\n)+/g)
         const mentionIndexs = []
         // eslint-disable-next-line no-constant-condition
         while(true){
@@ -185,10 +217,11 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
         // not mentionned.
         if(!mentionIndexs.length)return
         for(const mentionIndex of mentionIndexs){
-            const args = tweet.text.split(/ +/g).slice(mentionIndex+1)
+            const args = tweet.text.split(/( |\n)+/g).slice(mentionIndex+1).filter(e => !!e.trim())
             const command = args.shift().toLowerCase()
             
             const cmd = commands.get(command)
+            console.log(command, args)
             if(!cmd)continue
             if(!cmd.public)continue
             const n = nonce++
@@ -203,7 +236,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
                 console.error(`${command} Twitter ${n}`, err)
                 await twitc.v1.reply(
                     `An unknown error occured. Please report that to devs (cc @NotThomiz): Execution ID ${n}`, 
-                    tweet.id_str
+                    tweet.id
                 )
             }
         }

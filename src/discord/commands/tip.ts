@@ -10,6 +10,7 @@ import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import Tip from "../../models/Tip";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
+import { LEADERBOARD_SERVER_WHITELIST } from "../constants";
 
 export default new class TipCommand implements Command {
     description = "Tip someone on Discord"
@@ -150,7 +151,7 @@ Examples:
                     ]), 
                     token
                 )
-                if(currencyOrRecipient === "VITC"){
+                if(currencyOrRecipient === "VITC" && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
                     const promises = []
                     for(const tx of txs[1]){
                         promises.push(Tip.create({
@@ -177,7 +178,7 @@ Examples:
                     amount, 
                     token
                 )
-                if(currencyOrRecipient === "VITC"){
+                if(currencyOrRecipient === "VITC" && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
                     await Tip.create({
                         amount: parseFloat(
                             convert(

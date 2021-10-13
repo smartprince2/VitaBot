@@ -44,6 +44,12 @@ export function parseTransactionType(sendingHandle:string, transaction_handle:st
                         text: `You received **{amount}** for voting for our SBP!`
                     }
                 }
+                case "Mods": {
+                    return {
+                        type: "mods.rewards",
+                        text: `You received **{amount}** for being a moderator on Vitamin Coin!`
+                    }
+                }
             }
             break
         }

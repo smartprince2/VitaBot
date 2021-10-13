@@ -13,7 +13,7 @@ import { requestWallet } from "../../libwallet/http";
 
 export default new class WithdrawCommand implements Command {
     description = "Withdraw the funds on the tipbot"
-    extended_description = `Withdraw your money to a personnal wallet.
+    extended_description = `Withdraw your money to a personal wallet.
 
 Examples:
 **Withdraw all your ${tokenNameToDisplayName("VITC")} to your wallet**

@@ -11,11 +11,10 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import * as lt from "long-timeout"
 import { resolveDuration } from "../../common/util";
 import Giveaway from "../../models/Giveaway";
-import { throwFrozenAccountError } from "../util";
+import { findDiscordRainRoles, throwFrozenAccountError } from "../util";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import { endGiveaway, giveawayQueue, resolveGiveaway, startGiveaway, timeoutsGiveway, watchingGiveawayMap } from "../GiveawayManager";
 import Tip from "../../models/Tip";
-import { ALLOWED_RAINS_ROLES } from "../constants";
 import { requestWallet } from "../../libwallet/http";
 
 export default new class GiveawayCommand implements Command {
@@ -37,20 +36,25 @@ Examples:
             }catch{}
             return
         }
-        let hasRole = false
-        for(const roleId of ALLOWED_RAINS_ROLES){
-            if(message.member.roles.cache.has(roleId)){
-                hasRole = true
-                break
+        const roles = await findDiscordRainRoles(message.guildId)
+
+        if(roles.length > 0){
+            let hasRole = false
+            for(const roleId of roles){
+                if(message.member.roles.cache.has(roleId)){
+                    hasRole = true
+                    break
+                }
+            }
+            if(!hasRole){
+                try{
+                    await message.react("❌")
+                    await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
+                }catch{}
+                return
             }
         }
-        if(!hasRole){
-            try{
-                await message.react("❌")
-                await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
-            }catch{}
-            return
-        }
+
         const [
             amount,
             durationRaw

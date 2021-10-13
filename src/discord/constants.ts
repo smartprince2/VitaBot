@@ -1,7 +1,10 @@
 
 export const BOT_OWNER = "696481194443014174"
 
-export const ALLOWED_RAINS_ROLES = process.env.DISCORD_RAIN_ROLES.split(",")
+export const LEADERBOARD_SERVER_WHITELIST = [
+    // Vitamin Coin Server
+    "862416292760649768"
+]
 
 export const VITC_ADMINS = [
     // VitaBot
@@ -18,8 +21,6 @@ export const VITC_ADMINS = [
     "871221803580813373",
     // 6am
     "769939235616325632",
-    // Jellyben
-    "828802422364831825",
     // Not Thomiz
     BOT_OWNER,
     // Not Thomiz's alt
@@ -36,6 +37,8 @@ export const VITC_ADMINS = [
     "398731997742104586",
     // Corican
     "179943251896303616",
+    // Very Cute Cat
+    "797153797913837619",
 
     // ispan
     "698806044087943179",

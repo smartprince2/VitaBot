@@ -11,6 +11,7 @@ import Tip from "../../models/Tip";
 import help from "./help";
 import { refreshBotEmbed } from "../GiveawayManager";
 import { requestWallet } from "../../libwallet/http";
+import { LEADERBOARD_SERVER_WHITELIST } from "../constants";
 
 export default new class DonateCommand implements Command {
     description = "Add vitc/any token to the current giveaway pot."
@@ -99,7 +100,7 @@ ${process.env.DISCORD_PREFIX}do 10`
                 amountRaw,
                 tokenIds[currency]
             )
-            if(currency === "VITC"){
+            if(currency === "VITC" && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
                 await Tip.create({
                     amount: parseFloat(amount.toFixed()),
                     user_id: message.author.id,

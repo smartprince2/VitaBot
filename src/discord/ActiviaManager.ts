@@ -4,14 +4,15 @@ import ActiveStats from "../models/ActiveStats"
 import ActiveStatus from "../models/ActiveStatus"
 import ActiviaFreeze from "../models/ActiviaFreeze"
 import activeQueue from "./activeQueue"
-import { ALLOWED_RAINS_ROLES, VITC_ADMINS } from "./constants"
+import { VITC_ADMINS } from "./constants"
+import { findDiscordRainRoles } from "./util"
 
 client.on("messageCreate", async message => {
     const content = message.content
     .replace(/<@!?\d+>|@(everyone|here)|<@&\d+>|<#\d+>|<a?:[\w\d_]+:\d+>/g, "")
     if(!content || content.length < 2)return
     if(
-        !message.guild ||
+        !message.guildId ||
         message.author.bot
     )return
     if(/^[?.!]\w+/.test(content))return
@@ -19,12 +20,16 @@ client.on("messageCreate", async message => {
     let hasRole = false
     const member = await message.member.fetch().catch(() => null)
     if(!member)return
-    for(const role of ALLOWED_RAINS_ROLES){
-        if(!member.roles.cache.has(role))continue
-        hasRole = true
-        break
+
+    const roles = await findDiscordRainRoles(message.guildId)
+    if(roles.length > 0){
+        for(const role of roles){
+            if(!member.roles.cache.has(role))continue
+            hasRole = true
+            break
+        }
+        if(!hasRole)return
     }
-    if(!hasRole)return
 
     await activeQueue.queueAction(message.author.id, async () => {
         const frozen = await ActiviaFreeze.findOne({

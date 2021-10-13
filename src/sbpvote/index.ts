@@ -21,12 +21,14 @@ Promise.all([
 ]).then(async () => {
     const [
         rewardAddress,
+        distributionAddress,
         quotaAddress
     ] = await Promise.all([
         getVITEAddressOrCreateOne("SBP", "Rewards"),
+        getVITEAddressOrCreateOne("Mods", "Rewards"),
         getVITEAddressOrCreateOne("Batch", "Quota")
     ])
-    console.log(`Reward address: ${rewardAddress.address}`)
+    console.log(`SBP Rewards address: ${rewardAddress.address}`)
     ws.on("tx", async tx => {
         if(tx.to !== rewardAddress.address || tx.type !== "receive")return
         console.log(`Incoming transaction of ${convert(tx.amount, "RAW", tokenTickers[tx.token_id])} ${tokenTickers[tx.token_id]}`)
@@ -53,7 +55,8 @@ Promise.all([
                 if(vite.wallet.isValidAddress(address) === vite.wallet.AddressType.Contract)continue
                 if([
                     rewardAddress.address,
-                    quotaAddress.address
+                    quotaAddress.address,
+                    distributionAddress.address
                 ].includes(address))continue
 
                 let sbpVote = await SBPVote.findOne({

@@ -1,4 +1,4 @@
-import { TweetV1 } from "twitter-api-v2";
+import { TweetV2 } from "twitter-api-v2";
 import { commands, DMMessage, rawCommands, twitc } from "..";
 import Command from "../command";
 
@@ -17,9 +17,9 @@ Example:
     alias = ["help"]
     usage = ""
 
-    async executePublic(data:TweetV1, args: string[]){
-        await this.sendHelp(data.user.id_str, args[0])
-        await twitc.v1.reply("I've sent the help menu in your DM!", data.id_str)
+    async executePublic(data:TweetV2, args: string[]){
+        await this.sendHelp(data.author_id, args[0])
+        await twitc.v1.reply("I've sent the help menu in your DM!", data.id)
     }
 
     async executePrivate(message:DMMessage, args: string[]){

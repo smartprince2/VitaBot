@@ -8,9 +8,9 @@ import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import { client } from "..";
-import { throwFrozenAccountError } from "../util";
+import { throwFrozenAccountError, findDiscordRainRoles } from "../util";
 import Tip from "../../models/Tip";
-import { ALLOWED_RAINS_ROLES, VITC_ADMINS } from "../constants";
+import { VITC_ADMINS } from "../constants";
 import { requestWallet, BulkSendResponse } from "../../libwallet/http";
 
 export default new class VoiceRain implements Command {
@@ -49,6 +49,7 @@ Examples:
             return
         }
         voiceChannel = (await voiceChannel.fetch()) as VoiceChannel
+        const roles = await findDiscordRainRoles(message.guildId)
         const userList = voiceChannel.members
         .filter(e => {
             return !e.user.bot && 
@@ -56,12 +57,14 @@ Examples:
                 !VITC_ADMINS.includes(e.id) && 
                 !e.voice?.deaf &&
                 (() => {
-                    for(const roleId of ALLOWED_RAINS_ROLES){
-                        if(message.member.roles.cache.has(roleId)){
-                            return true
+                    if(roles.length > 0){
+                        for(const roleId of roles){
+                            if(message.member.roles.cache.has(roleId)){
+                                return true
+                            }
                         }
-                    }
-                    return false
+                        return false
+                    }else return true
                 })()
         })
         .map(e => e.id)

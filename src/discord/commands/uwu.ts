@@ -17,7 +17,6 @@ export default new class UwUCommand implements Command {
     hidden = true
 
     async execute(message:Message, args: string[], command: string){
-        if(!message.guild)return
         if(!VITC_ADMINS.includes(message.author.id))return
         
         await message.react("💊").catch(()=>{})

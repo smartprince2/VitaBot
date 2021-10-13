@@ -8,8 +8,8 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
 import { DMMessage, mention, twitc } from "..";
 import { extractMention, isAddressOkayPrivate, isAddressOkayPublic } from "../util";
-import { fetchUserByUsername } from "../users";
-import { TweetV1, UserV2 } from "twitter-api-v2";
+import { fetchUser, fetchUserByUsername } from "../users";
+import { TweetV2, UserV2 } from "twitter-api-v2";
 import twitterqueue from "../twitterqueue";
 
 export default new class TipCommand implements Command {
@@ -31,12 +31,12 @@ Give one ${tokenNameToDisplayName("VITC")} to more than one person
     public = true
     dm = true
 
-    async executePublic(tweet:TweetV1, args: string[], command: string){
-        const tip = await this.sendTip(args, command, tweet.user.id_str, "public", tweet)
+    async executePublic(tweet:TweetV2, args: string[], command: string){
+        const tip = await this.sendTip(args, command, tweet.author_id, "public", tweet)
         if(!tip)return
         if(tip.type == "help")return help.executePublic(tweet, [command])
         const text = this.getText(tip)
-        await twitc.v1.reply(text, tweet.id_str)
+        await twitc.v1.reply(text, tweet.id)
     }
 
     async executePrivate(message:DMMessage, args:string[], command: string){
@@ -83,9 +83,9 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
         }
     }
 
-    async sendTip(args:string[], command:string, user_id:string, type: "public", tweet: TweetV1)
+    async sendTip(args:string[], command:string, user_id:string, type: "public", tweet: TweetV2)
     async sendTip(args:string[], command:string, user_id:string, type: "private", message: DMMessage)
-    async sendTip(args:string[], command:string, user_id:string, type: "public"|"private", tm: TweetV1|DMMessage){
+    async sendTip(args:string[], command:string, user_id:string, type: "public"|"private", tm: TweetV2|DMMessage){
         let [
             // eslint-disable-next-line prefer-const
             amount,
@@ -105,10 +105,11 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
         }
         if(recipientsRaw.length === 0 && type === "public"){
             // tip the author of the tweet above us.
-            const tweet = tm as TweetV1
-            if(tweet.in_reply_to_user_id_str){
+            const tweet = tm as TweetV2
+            if(tweet.in_reply_to_user_id){
                 // autofill the user's name
-                recipientsRaw.unshift(`@${tweet.in_reply_to_screen_name}`)
+                const user = await fetchUser(tweet.in_reply_to_user_id)
+                recipientsRaw.unshift(`@${user.username}`)
             }
         }
         currencyOrRecipient = currencyOrRecipient.toUpperCase()
@@ -148,10 +149,10 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
         }
         await Promise.all(promises)
         if(recipients.length === 0){
-            const tweet = tm as TweetV1
+            const tweet = tm as TweetV2
             let shouldHelp = true
-            if(type === "public" && tweet.in_reply_to_screen_name){
-                const user = await fetchUserByUsername(tweet.in_reply_to_screen_name)
+            if(type === "public" && tweet.in_reply_to_user_id){
+                const user = await fetchUser(tweet.in_reply_to_user_id)
                 if(user && user.id !== user_id){
                     recipients.push(user)
                     shouldHelp = false
@@ -182,7 +183,7 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
                 if(!await isAddressOkayPrivate(address, tm as DMMessage))return
             break
             case "public":
-                if(!await isAddressOkayPublic(address, tm as TweetV1))return
+                if(!await isAddressOkayPublic(address, tm as TweetV2))return
         }
 
         return viteQueue.queueAction(address.address, async () => {

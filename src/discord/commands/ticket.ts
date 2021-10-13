@@ -9,9 +9,9 @@ import Command from "../command";
 import discordqueue from "../discordqueue";
 import BigNumber from "bignumber.js"
 import Tip from "../../models/Tip";
-import { ALLOWED_RAINS_ROLES } from "../constants";
 import { refreshBotEmbed } from "../GiveawayManager";
 import { requestWallet } from "../../libwallet/http";
+import { findDiscordRainRoles } from "../util";
 
 export default new class TicketCommand implements Command {
     description = "Enter the current running giveaway in the channel"
@@ -33,19 +33,22 @@ ${process.env.DISCORD_PREFIX}ticket`
         try{
             await message.react("💊")
         }catch{}
-        let hasRole = false
-        for(const roleId of ALLOWED_RAINS_ROLES){
-            if(message.member.roles.cache.has(roleId)){
-                hasRole = true
-                break
+        const roles = await findDiscordRainRoles(message.guildId)
+        if(roles.length > 0){
+            let hasRole = false
+            for(const roleId of roles){
+                if(message.member.roles.cache.has(roleId)){
+                    hasRole = true
+                    break
+                }
             }
-        }
-        if(!hasRole){
-            try{
-                await message.delete()
-                await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
-            }catch{}
-            return
+            if(!hasRole){
+                try{
+                    await message.delete()
+                    await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
+                }catch{}
+                return
+            }
         }
         const giveaway = await Giveaway.findOne({
             guild_id: message.guildId

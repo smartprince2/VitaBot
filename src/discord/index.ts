@@ -15,6 +15,7 @@ import Address from "../models/Address"
 import { convert, tokenNameToDisplayName } from "../common/convert"
 import { VITC_ADMINS } from "./constants"
 import { parseTransactionType } from "../wallet/address"
+import "./ModsDistributionManager"
 
 export const client = new Discord.Client({
     allowedMentions: {

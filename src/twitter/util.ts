@@ -1,21 +1,21 @@
 import { DMMessage, twitc } from ".";
 import { IAddress } from "../models/Address";
 import * as twitterText from "twitter-text"
-import { TweetV1 } from "twitter-api-v2";
+import { TweetV2 } from "twitter-api-v2";
 
-export async function isAddressOkayPublic(address:IAddress, tweet:TweetV1):Promise<boolean>{
+export async function isAddressOkayPublic(address:IAddress, tweet:TweetV2):Promise<boolean>{
     if(!address.paused)return true
     await twitc.v1.sendDm({
         recipient_id: "1433501349598072833",
-        text: `An action was requested, but was blocked because account is frozen.
+        text: `An action was requested, but blocked because account is frozen.
         
-@${tweet.user.screen_name} (${tweet.user.id}): ${tweet.text}`
+${tweet.author_id}: ${tweet.text}`
     })
     await twitc.v1.reply(
         "Your account has been frozen, likely for using "+
         "alts or abusing a faucet/rains. "+
         "Please contact @NotThomiz to unlock your account.",
-        tweet.id_str
+        tweet.id
     )
     return false
 }
@@ -23,7 +23,7 @@ export async function isAddressOkayPrivate(address:IAddress, message:DMMessage):
     if(!address.paused)return true
     await twitc.v1.sendDm({
         recipient_id: "1433501349598072833",
-        text: `An action was requested, but was blocked because account is frozen.
+        text: `An action was requested, but blocked because account is frozen.
         
 @${message.user.screen_name} (${message.user.id}): ${message.text}`
     })

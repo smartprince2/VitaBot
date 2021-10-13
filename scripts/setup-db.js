@@ -89,6 +89,35 @@ const { Client, Team } = require("discord.js")
             })
         })(),
         (async () => {
+            let ModsRewardsAddress = await Address.findOne({
+                handles: "Mods.Rewards"
+            })
+            if(!ModsRewardsAddress){
+                await inquirerQueue.queueAction("", async () => {
+                    console.info("Creating Mods Rewards address...")
+                })
+                const wallet = vite.wallet.createWallet()
+                const addr = wallet.deriveAddress(0)
+                ModsRewardsAddress = await Address.create({
+                    network: "VITE",
+                    seed: wallet.seedHex,
+                    address: addr.address,
+                    handles: [
+                        "Mods.Rewards"
+                    ]
+                })
+                await inquirerQueue.queueAction("", async () => {
+                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m")
+                })
+                await inquirerQueue.queueAction("", async () => {
+                    console.log("Mods Rewards created!")
+                })
+            }
+            await inquirerQueue.queueAction("", async () => {
+                console.log("Please fill this address with vitc: \x1b[33m"+ModsRewardsAddress.address+"\x1b[37m")
+            })
+        })(),
+        (async () => {
             let ownerSetting = await BotSettings.findOne({
                 name: "BOT_OWNER"
             })

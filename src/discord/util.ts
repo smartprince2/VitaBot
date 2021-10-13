@@ -1,6 +1,8 @@
 import { MessageEmbed, Message, TextChannel } from "discord.js";
 import { client } from ".";
 import { VITC_COLOR } from "../common/constants";
+import ActionQueue from "../common/queue";
+import DiscordRainRoles from "../models/DiscordRainRoles";
 
 export function generateDefaultEmbed(){
     return new MessageEmbed()
@@ -8,6 +10,21 @@ export function generateDefaultEmbed(){
     .setFooter(client.user?.username || "VitaBot", client.user?.avatarURL({
         dynamic: true
     }))
+}
+
+export const discordSettingsQueue = new ActionQueue<string>()
+export const discordRainRolesCache = new Map<string, string[]>()
+export function findDiscordRainRoles(guild_id: string){
+    return discordSettingsQueue.queueAction(guild_id, async () => {
+        if(discordRainRolesCache.has(guild_id))return discordRainRolesCache.get(guild_id)
+
+        const roles = await DiscordRainRoles.find({
+            guild_id: guild_id
+        })
+        const rids = roles.map(e => e.role_id)
+        discordRainRolesCache.set(guild_id, rids)
+        return rids
+    })
 }
 
 export const USER_PATTERN = /^<@!?(?<id>\d{17,19})>$/
