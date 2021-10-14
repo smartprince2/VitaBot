@@ -92,7 +92,7 @@ Promise.all([
                 const amount = new BigNumber(votes.votes[address])
                     .div(totalValid)
                     .times(viteBalance)
-                    .times(100)
+                    .times(65)
                     .toFixed()
                     .split(".")[0]
 
