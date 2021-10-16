@@ -43,8 +43,6 @@ export const AmountValidator = Joi.string().pattern(/^\d+$/)
 export const RawAmountValidator = Joi.string().pattern(/^\d+$/)
 
 export const TokenIdValidator = Joi.string().custom(token => {
-    if(!(token in tokenTickers)){
-        throw new TypeError("Invalid Token Id")
-    }
+    if(!vite.utils.isValidTokenId(token))throw new TypeError("Invalid Token Id")
     return token
 })

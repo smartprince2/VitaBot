@@ -19,6 +19,7 @@ export const availableNodes = [
 export const tokenIds = {
     // did you know it was pronounced veet ?
     VITE: "tti_5649544520544f4b454e6e40",
+    ATTOV: "tti_5649544520544f4b454e6e40",
     // The healthiest one
     VITC: "tti_22d0b205bed4d268a05dfc3c",
     // 🍌🍌
@@ -27,6 +28,7 @@ export const tokenIds = {
     NANO: "tti_29a2af20212b985e9d49e899",
     // ew
     BTC: "tti_b90c9baffffc9dae58d1f33f",
+    SATS: "tti_b90c9baffffc9dae58d1f33f",
     // what's the purpose of that one ?
     VX: "tti_564954455820434f494e69b5",
     // redeem merch I guess
@@ -49,9 +51,11 @@ export const tokenTickers = {
 
 export const tokenDecimals = {
     VITE: 18,
+    ATTOV: 0,
     VITC: 18,
     BAN: 29,
     NANO: 30,
+    SATS: 0,
     BTC: 8,
     VX: 18,
     VCP: 0,
@@ -61,9 +65,11 @@ export const tokenDecimals = {
 
 export const tokenNames = {
     VITE: "Vite",
+    ATTOV: "Attov",
     VITC: "Vitamin Coin 💊",
     BAN: "Banano 🍌",
-    NANO: "Nano"
+    NANO: "Nano",
+    SATS: "Satoshi"
 }
 
 export let wsProvider
@@ -90,17 +96,14 @@ export async function init(){
     console.log("[VITE] Connected to node")
     await registerEvents()
     
-    ;(async () => {
-        // Send tips/rains that are stuck
-        try{
-            await PendingTransaction.find()
-            .populate("address")
-            .exec()
-            .then(processBulkTransactions)
-        }catch(err){
-            console.error(err)
-        } 
-    })
+    try{
+        await PendingTransaction.find()
+        .populate("address")
+        .exec()
+        .then(processBulkTransactions)
+    }catch(err){
+        console.error(err)
+    } 
 }
 
 let resolveTokens:()=>void
@@ -133,23 +136,28 @@ async function registerEvents(){
                     if(tokensInfo.tokenInfoList.length != pageSize)break
                 }
                 tokens = tokens.sort((a, b) => a.index-b.index)
-                for(const token of tokens
-                    .filter(token => {
-                        if(
-                            tokens.find(e => e.tokenSymbol === token.tokenSymbol)
-                            !== token
-                        )return false
-                        return true
-                    })
-                ){
+                for(const token of tokens){
+                    const symbol = `${token.tokenSymbol}-${"000".slice((token.index.toString()).length)+token.index}`
+                    tokenNames[symbol] = token.tokenName
                     if(!tokenNames[token.tokenSymbol]){
                         tokenNames[token.tokenSymbol] = token.tokenName
                     }
                     if(!tokenIds[token.tokenSymbol]){
                         tokenIds[token.tokenSymbol] = token.tokenId
                         tokenDecimals[token.tokenSymbol] = token.decimals
-                        tokenTickers[token.tokenId] = token.tokenSymbol
+                        if(!tokenTickers[token.tokenId]){
+                            tokenTickers[token.tokenId] = token.tokenSymbol
+                        }
+                    }else{
+                        if(!tokenTickers[token.tokenId]){
+                            tokenTickers[token.tokenId] = symbol
+                        }
                     }
+                    if(tokenIds[token.tokenSymbol] === token.tokenId){
+                        tokenNames[symbol] = token.tokenName
+                    }
+                    tokenDecimals[symbol] = token.decimals
+                    tokenIds[symbol] = token.tokenId
                 }
             }catch(err){
                 // can't do anything better than report in console.

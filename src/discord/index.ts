@@ -87,6 +87,7 @@ Thanks to all our voters!`
         // shouldn't happen but
         if(!address)return
 
+        // don't send notifications on random coins.
         if(!(transaction.token_id in tokenTickers))return
         
         const tokenName = tokenTickers[transaction.token_id]
@@ -135,7 +136,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
 
 const prefix = process.env.DISCORD_PREFIX
 client.on("messageCreate", async message => {
-    if([FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.author.id)){
+    if([FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.channel.id)){
         if(!VITC_ADMINS.includes(message.author.id))return
     }
     if(botRegexp.test(message.content)){

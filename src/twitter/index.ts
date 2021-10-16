@@ -218,12 +218,11 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
         if(!mentionIndexs.length)return
         for(const mentionIndex of mentionIndexs){
             const args = tweet.text.split(/( |\n)+/g).slice(mentionIndex+1).filter(e => !!e.trim())
-            const command = args.shift().toLowerCase()
+            const command = args.shift().toLowerCase().replace(/^\./, "")
             
             const cmd = commands.get(command)
             console.log(command, args)
-            if(!cmd)continue
-            if(!cmd.public)continue
+            if(!cmd?.public)continue
             const n = nonce++
     
             try{
