@@ -1,5 +1,5 @@
 import events, { ReceiveTransaction, SendTransaction } from "./events"
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import viteQueue from "./viteQueue"
 import BigNumber from "bignumber.js"
 import { IAddress } from "../models/Address"

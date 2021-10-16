@@ -1,5 +1,5 @@
-import WS_RPC from "vitejs-notthomiz-ws";
-import * as vite from "vitejs-notthomiz";
+import WS_RPC from "@vite/vitejs-ws";
+import * as vite from "@vite/vitejs";
 import { onNewAccountBlock } from "./receive";
 import BigNumber from "bignumber.js"
 import { getCurrentCycle } from "./cycle";

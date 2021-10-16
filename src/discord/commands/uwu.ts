@@ -3,7 +3,7 @@ import Command from "../command";
 import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed, ID_PATTERN, USER_PATTERN } from "../util";
 import help from "./help";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { client } from "..";
 import { getVITEAddress, parseTransactionType } from "../../wallet/address";
 import Address from "../../models/Address";

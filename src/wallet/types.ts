@@ -1,4 +1,4 @@
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import Joi from "joi"
 import { tokenTickers } from "./node"
 

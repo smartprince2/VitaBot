@@ -8,7 +8,7 @@ import { dbPromise } from "../common/load-db";
 import { tokenIds, tokenTickers } from "../common/constants";
 import viteQueue from "../cryptocurrencies/viteQueue";
 import { convert } from "../common/convert";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { getVITEAddressOrCreateOne } from "../wallet/address";
 import SBPVote from "../models/SBPVote";
 import { durationUnits } from "../common/util";
