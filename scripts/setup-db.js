@@ -3,7 +3,7 @@ patch()
 const dotenv = require("dotenv")
 const { join } = require("path")
 const mongoose = require("mongoose")
-const vite = require("@vite/vitejs")
+const vite = require("vitejs-notthomiz")
 dotenv.config({
     path: join(__dirname, "../.env")
 })
@@ -65,7 +65,7 @@ const { Client, Team } = require("discord.js")
             })
             if(!SBPRewardsAddress){
                 await inquirerQueue.queueAction("", async () => {
-                    console.info("Creating SBP Rewards address...")
+                    console.info("Creating SBP distribution address...")
                 })
                 const wallet = vite.wallet.createWallet()
                 const addr = wallet.deriveAddress(0)
@@ -78,14 +78,43 @@ const { Client, Team } = require("discord.js")
                     ]
                 })
                 await inquirerQueue.queueAction("", async () => {
-                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m")
+                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m SBPVOTERS")
                 })
                 await inquirerQueue.queueAction("", async () => {
                     console.log("SBP Rewards created!")
                 })
             }
             await inquirerQueue.queueAction("", async () => {
-                console.log("Please use this address to claim SBP rewards: \x1b[33m"+SBPRewardsAddress.address+"\x1b[37m")
+                console.log("Please use this address to distribute SBP rewards to voters: \x1b[33m"+SBPRewardsAddress.address+"\x1b[37m")
+            })
+        })(),
+        (async () => {
+            let SBPClaimRewardsAddress = await Address.findOne({
+                handles: "SBPClaim.Rewards"
+            })
+            if(!SBPClaimRewardsAddress){
+                await inquirerQueue.queueAction("", async () => {
+                    console.info("Creating SBP Claiming Rewards address...")
+                })
+                const wallet = vite.wallet.createWallet()
+                const addr = wallet.deriveAddress(0)
+                SBPClaimRewardsAddress = await Address.create({
+                    network: "VITE",
+                    seed: wallet.seedHex,
+                    address: addr.address,
+                    handles: [
+                        "SBPClaim.Rewards"
+                    ]
+                })
+                await inquirerQueue.queueAction("", async () => {
+                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m SBPCLAIM")
+                })
+                await inquirerQueue.queueAction("", async () => {
+                    console.log("SBP Claiming Rewards created!")
+                })
+            }
+            await inquirerQueue.queueAction("", async () => {
+                console.log("Please use this address to claim SBP rewards: \x1b[33m"+SBPClaimRewardsAddress.address+"\x1b[37m")
             })
         })(),
         (async () => {
@@ -107,14 +136,14 @@ const { Client, Team } = require("discord.js")
                     ]
                 })
                 await inquirerQueue.queueAction("", async () => {
-                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m")
+                    console.warn("Please Save this mnemonic phrase somewhere safe: \x1b[33m"+wallet.mnemonics+"\x1b[37m MODSREWARDS")
                 })
                 await inquirerQueue.queueAction("", async () => {
                     console.log("Mods Rewards created!")
                 })
             }
             await inquirerQueue.queueAction("", async () => {
-                console.log("Please fill this address with vitc: \x1b[33m"+ModsRewardsAddress.address+"\x1b[37m")
+                console.log("Please fill this address with vitc for mods distribution: \x1b[33m"+ModsRewardsAddress.address+"\x1b[37m")
             })
         })(),
         (async () => {

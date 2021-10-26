@@ -125,10 +125,13 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
 }
 
 export const giveaway_channels = {
-    "862416292760649768": "862416292760649773 870900472557502474 877465940474888212 878373710174773308 884088302020481074 871022892832407602".split(" ")
+    "862416292760649768": "871065375230537728 862416292760649773 870900472557502474 877465940474888212 878373710174773308 884088302020481074 871022892832407602".split(" ")
 }
 export const giveaway_posting_channel = {
     "862416292760649768": "884088302020481074"
+}
+export const giveaways_ping_roles = {
+    "862416292760649768": ["883567202492620830"]
 }
 
 export async function startGiveaway(giveaway:IGiveaway){
@@ -142,7 +145,11 @@ export async function startGiveaway(giveaway:IGiveaway){
     try{
         const embed = await getGiveawayEmbed(giveaway)
         const message = await channel.send({
-            embeds: [embed]
+            embeds: [embed],
+            content: (giveaways_ping_roles[giveaway.guild_id] || []).map(e => `<@&${e}>`).join("") || undefined,
+            allowedMentions: {
+                roles: giveaways_ping_roles[giveaway.guild_id] || []
+            }
         })
         giveaway.bot_message_id = message.id
         giveaway.channel_id = message.channelId
@@ -306,7 +313,7 @@ export async function searchStuckGiveaways(){
     })
 }
 
-events.on("wallet_ready", async () => {
+events.once("wallet_ready", async () => {
     // Empty stuck giveaways
     // eslint-disable-next-line no-constant-condition
     while(true){

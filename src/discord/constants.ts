@@ -27,8 +27,6 @@ export const VITC_ADMINS = [
     "536124399644966922",
     // LUCA
     "659508168304492565",
-    // mmmmm
-    "400552599499177986",
     // imalfect
     "852640730093453372",
     // Shryder
@@ -48,8 +46,6 @@ export const VITC_ADMINS = [
     "861182006502359080",
     // VitaMachine
     "553060199510966293",
-    // Supreme Chancellor Palpatine
-    "356791504318234625",
     // YaroslavaWise
     "398394098127732738",
     // TARZAN | WatchDog | IND

@@ -34,6 +34,8 @@ specifiers:
   twitter-text: ^3.1.0
   typescript: ^4.3.5
   utf-8-validate: ^5.0.5
+  vitejs-notthomiz: ^2.3.15
+  vitejs-notthomiz-ws: ^2.3.15
   ws: ^8.2.1
   zlib-sync: ^0.1.7
 
@@ -56,6 +58,8 @@ dependencies:
   twitter-api-v2: 1.5.1
   twitter-autohook: 1.7.2
   twitter-text: 3.1.0
+  vitejs-notthomiz: 2.3.15
+  vitejs-notthomiz-ws: 2.3.15
   ws: 8.2.1_72ef9f06cb99540da679cbf1bf7a3256
 
 optionalDependencies:
@@ -3085,6 +3089,50 @@ packages:
       assert-plus: 1.0.0
       core-util-is: 1.0.2
       extsprintf: 1.3.0
+    dev: false
+
+  /vitejs-notthomiz-ws/2.3.15:
+    resolution: {integrity: sha512-dE9I3cxDwrqu1TwEi4yrPJ5zCVsv52Yr2YEUc3x9f3NPwjPjbXn/H2KYFnxVjxn2ceL0jWqP+VSu2f+Syhm9fQ==}
+    dependencies:
+      '@sisi/ed25519-blake2b-hd-key': 1.0.2
+      '@sisi/tweetnacl-blake2b': 1.0.0
+      bip39: 3.0.4
+      blake2b: 2.1.3
+      blakejs: 1.1.1
+      bn.js: 5.2.0
+      browserify-aes: 1.2.0
+      buffer: 5.7.1
+      create-hmac: 1.1.7
+      es6-promise: 4.2.8
+      jsonrpc-lite: 2.2.0
+      net: 1.0.2
+      pure-uuid: 1.6.2
+      qs: 6.10.1
+      scryptsy: 2.1.0
+      websocket: 1.0.34
+      xhr2: 0.2.1
+    dev: false
+
+  /vitejs-notthomiz/2.3.15:
+    resolution: {integrity: sha512-Nas7US8vexr1ZX8kMiEg+fULmlvmh3FHRVDDRvnBDBbkqzGGCjh8xh6op05xR9BF+FcAxl2Ekldk5yKGOIring==}
+    dependencies:
+      '@sisi/ed25519-blake2b-hd-key': 1.0.2
+      '@sisi/tweetnacl-blake2b': 1.0.0
+      bip39: 3.0.4
+      blake2b: 2.1.3
+      blakejs: 1.1.1
+      bn.js: 5.2.0
+      browserify-aes: 1.2.0
+      buffer: 5.7.1
+      create-hmac: 1.1.7
+      es6-promise: 4.2.8
+      jsonrpc-lite: 2.2.0
+      net: 1.0.2
+      pure-uuid: 1.6.2
+      qs: 6.10.1
+      scryptsy: 2.1.0
+      websocket: 1.0.34
+      xhr2: 0.2.1
     dev: false
 
   /wcwidth/1.0.1:

@@ -1,5 +1,5 @@
 import events, { ReceiveTransaction, SendTransaction } from "./events"
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import viteQueue from "./viteQueue"
 import BigNumber from "bignumber.js"
 import { IAddress } from "../models/Address"
@@ -9,14 +9,14 @@ import PendingTransaction, { IPendingTransactions } from "../models/PendingTrans
 
 export const hashToSender:{[key:string]: string} = {}
 
-export async function send(address: IAddress, toAddress: string, amount: string, tokenId: string):Promise<SendTransaction>{
-    // Ok, we received a deposit/tip
+export async function send(address: IAddress, toAddress: string, amount: string, tokenId: string, data?: string):Promise<SendTransaction>{
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
     const accountBlock = vite.accountBlock.createAccountBlock("send", {
         toAddress: toAddress,
         address: address.address,
         tokenId: tokenId,
-        amount: amount
+        amount: amount,
+        data: data || undefined
     })
     accountBlock.setPrivateKey(keyPair.privateKey)
     const hash = await sendTX(address.address, accountBlock)
@@ -34,7 +34,7 @@ export async function send(address: IAddress, toAddress: string, amount: string,
 
     return tx
 }
-
+        
 let botAddress:IAddress
 export async function bulkSend(from: IAddress, payouts:[string, string][], tokenId: string){
     if(!botAddress)botAddress = await viteQueue.queueAction("Batch.Quota", () => getVITEAddressOrCreateOne("Batch", "Quota"))

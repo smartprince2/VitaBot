@@ -11,6 +11,9 @@
         "esModuleInterop": true
     },
     "exclude": [
-        "dist/"
+        "dist/",
+        "backups/",
+        "node_modules/",
+        "scripts/"
     ]
 }

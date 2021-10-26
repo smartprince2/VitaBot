@@ -1,5 +1,5 @@
-import WS_RPC from "@vite/vitejs-ws";
-import * as vite from "@vite/vitejs";
+import WS_RPC from "vitejs-notthomiz-ws";
+import * as vite from "vitejs-notthomiz";
 import { onNewAccountBlock } from "./receive";
 import BigNumber from "bignumber.js"
 import { getCurrentCycle } from "./cycle";
@@ -55,8 +55,8 @@ export const tokenDecimals = {
     VITC: 18,
     BAN: 29,
     NANO: 30,
-    SATS: 0,
     BTC: 8,
+    SATS: 0,
     VX: 18,
     VCP: 0,
     XMR: 12,
@@ -69,7 +69,9 @@ export const tokenNames = {
     VITC: "Vitamin Coin 💊",
     BAN: "Banano 🍌",
     NANO: "Nano",
-    SATS: "Satoshi"
+    SATS: "Satoshi",
+    BUS: "Bussycoin <:Bussy:860497482693214218>",
+    XRB: "Rayblocks <:bussycoin:863656338957402122>"
 }
 
 export let wsProvider
@@ -184,6 +186,17 @@ export async function getVotedSBP(address:string):Promise<{
     }
 }>{
     return wsProvider.request("contract_getVotedSBP", address)
+}
+
+export async function getSBPRewardsPendingWithdrawal(sbp:string):Promise<{
+    blockProducingReward: string,
+    votingReward: string,
+    totalReward: string,
+    producedBlocks: string,
+    targetBlocks: string,
+    allRewardWithdrawed: boolean
+}>{
+    return wsProvider.request("contract_getSBPRewardPendingWithdrawal", sbp)
 }
 
 export async function changeSBP(address:IAddress, name: string){

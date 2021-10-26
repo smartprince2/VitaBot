@@ -157,15 +157,25 @@ export default new class ClearFaucetCommand implements Command {
                 )
                 return
             }
-            await requestWallet(
-                "bulk_send",
-                address.address,
-                recipients.map(e => [
-                    e.address,
-                    rawAmount.toFixed().split(".")[0]
-                ]),
-                tokenIds.VITC
-            )
+            if(recipients.length > 1){
+                await requestWallet(
+                    "bulk_send",
+                    address.address,
+                    recipients.map(e => [
+                        e.address,
+                        rawAmount.toFixed().split(".")[0]
+                    ]),
+                    tokenIds.VITC
+                )
+            }else if(recipients.length === 1){
+                await requestWallet(
+                    "send",
+                    address.address,
+                    recipients[0].address,
+                    rawAmount.toFixed().split(".")[0],
+                    tokenIds.VITC
+                )
+            }
             try{
                 await message.react("873558842699571220")
             }catch{}

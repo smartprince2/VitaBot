@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { tokenIds, tokenNames, tokenTickers } from "../../common/constants";
+import { tokenIds, tokenTickers } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -7,6 +7,8 @@ import { requestWallet } from "../../libwallet/http";
 import Command from "../command";
 import discordqueue from "../discordqueue";
 import { generateDefaultEmbed } from "../util";
+import { tokenPrices } from "../../common/price";
+import BigNumber from "bignumber.js";
 
 export default new class BalanceCommand implements Command {
     description = "Get your balance"
@@ -47,9 +49,20 @@ export default new class BalanceCommand implements Command {
             const displayToken = tokenTickers[tokenId] || tokenId
             const displayBalance = convert(balances[tokenId], "RAW", displayToken as any)
 
-            return `${displayBalance} ${tokenTickers[tokenId] ? `**${tokenTickers[tokenId]}**` : ""}`
+            const pair = tokenPrices[tokenId+"/"+tokenIds.USDT]
+
+            return `${displayBalance} ${tokenTickers[tokenId] ? `**${tokenTickers[tokenId]}** ` : ""}(= **$${
+                new BigNumber(
+                    new BigNumber(pair?.closePrice || 0)
+                        .times(displayBalance)
+                        .times(100)
+                        .toFixed()
+                        .split(".")[0]
+                ).div(100)
+                .toFixed()
+            }**)`
         }).join("\n"), true)
-        .setDescription(`****`)
+        //.setDescription(`****`)
         await message.author.send({
             embeds: [embed]
         })

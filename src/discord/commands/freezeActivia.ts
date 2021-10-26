@@ -36,7 +36,7 @@ export default new class FreezeActiviaCommand implements Command {
                 await message.reply("Please add the id of an user.")
                 return
             }
-            await message.channel.send("Freezing "+user)
+            await message.channel.send(`${command.replace("freezeactivia", "")}freezing <@${user.id}> (${user.tag})`)
             await activeQueue.queueAction(user.id, async () => {
                 const activiafreeze = await ActiviaFreeze.findOne({
                     user_id: user.id

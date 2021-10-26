@@ -8,7 +8,7 @@ import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import { requestWallet } from "../../libwallet/http";
 
 export default new class WithdrawCommand implements Command {

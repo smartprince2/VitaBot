@@ -2,7 +2,7 @@ import { Message, User } from "discord.js";
 import Command from "../command";
 import { BOT_OWNER } from "../constants";
 import { ID_PATTERN, USER_PATTERN } from "../util";
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import { client } from "..";
 import discordqueue from "../discordqueue";
 import PersonalAddress from "../../models/PersonalAddress";

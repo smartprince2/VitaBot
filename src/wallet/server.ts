@@ -16,7 +16,16 @@ for(const file of fs.readdirSync(join(__dirname, "actions"))){
 }
 
 const app = express()
-.post(
+.use((req, res, next) => {
+    // only allow localhost to access this service.
+    if(!["::ffff:127.0.0.1", "127.0.0.1"].includes(req.ip))return res.status(401).send({
+        error: {
+            name: "UnauthorizedError",
+            message: "Your ip isn't allowed to access this service."
+        }
+    })
+    next()
+}).post(
     "/", 
     (req, res, next) => {
         const authorization = req.header("Authorization")

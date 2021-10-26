@@ -1,6 +1,6 @@
 import Address, { IAddress } from "../models/Address"
 import { changeSBP, getVotedSBP, sendTX, tokenIds, wsProvider } from "./node"
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import viteQueue from "./viteQueue"
 import events from "./events"
 import { CONSENSUS_ABI } from "./abis"
@@ -26,6 +26,7 @@ export async function onNewAccountBlock(hash: string){
                 default: {
                     if(skipReceiveBlocks.has(block.hash))return
                     // Don't even try to check for smart contracts
+                    // this will reduce load
                     if(vite.wallet.isValidAddress(block.toAddress) === vite.wallet.AddressType.Contract)return
                     const address = await Address.findOne({
                         address: block.toAddress,
@@ -98,6 +99,7 @@ export async function onConsensusContractTransaction(block: any){
 const skipSBPCheck = new Set<string>()
 export const skipReceiveBlocks = new Set<string>()
 export async function receive(block: any, address: IAddress){
+    console.log(`Receiving ${block.hash} for ${address.address}`)
     const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
     const hash = await viteQueue.queueAction(address.address, async () => {
         const accountBlock = vite.accountBlock.createAccountBlock("receive", {

@@ -8,7 +8,7 @@ import { dbPromise } from "../common/load-db";
 import { tokenIds, tokenTickers } from "../common/constants";
 import viteQueue from "../cryptocurrencies/viteQueue";
 import { convert } from "../common/convert";
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import { getVITEAddressOrCreateOne } from "../wallet/address";
 import SBPVote from "../models/SBPVote";
 import { durationUnits } from "../common/util";
@@ -22,11 +22,13 @@ Promise.all([
     const [
         rewardAddress,
         distributionAddress,
-        quotaAddress
+        quotaAddress,
+        sbpClaimAddress
     ] = await Promise.all([
         getVITEAddressOrCreateOne("SBP", "Rewards"),
         getVITEAddressOrCreateOne("Mods", "Rewards"),
-        getVITEAddressOrCreateOne("Batch", "Quota")
+        getVITEAddressOrCreateOne("Batch", "Quota"),
+        getVITEAddressOrCreateOne("SBPClaim", "Rewards")
     ])
     console.log(`SBP Rewards address: ${rewardAddress.address}`)
     ws.on("tx", async tx => {
@@ -38,10 +40,10 @@ Promise.all([
             const balances = await requestWallet("get_balances", rewardAddress.address)
             const viteBalance = new BigNumber(balances[tokenIds.VITE])
             const vitcBalance = new BigNumber(balances[tokenIds.VITC])
-            // wait to have at least 500 vite before distributing.
+            // wait to have at least 400 vite before distributing.
             // will stop if someone sends a ridiculously low amount
             // to the reward address
-            if(viteBalance.isLessThan(convert("500", "VITE", "RAW")))return
+            if(viteBalance.isLessThan(convert("400", "VITE", "RAW")))return
             // need vitc to work. The current multiplier is 100x
             if(!vitcBalance.isGreaterThan(0))return
 
@@ -56,7 +58,8 @@ Promise.all([
                 if([
                     rewardAddress.address,
                     quotaAddress.address,
-                    distributionAddress.address
+                    distributionAddress.address,
+                    sbpClaimAddress.address
                 ].includes(address))continue
 
                 let sbpVote = await SBPVote.findOne({
@@ -90,8 +93,8 @@ Promise.all([
             let totalVitc = new BigNumber(0)
             for(const address of validAddresses){
                 const amount = new BigNumber(votes.votes[address])
-                    .div(totalValid)
                     .times(viteBalance)
+                    .div(totalValid)
                     .times(65)
                     .toFixed()
                     .split(".")[0]

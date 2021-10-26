@@ -1,6 +1,6 @@
 import { Platform } from "../common/constants"
 import Address, { IAddress } from "../models/Address"
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 
 export function parseTransactionType(sendingHandle:string, transaction_handle:string){
     if(!sendingHandle){

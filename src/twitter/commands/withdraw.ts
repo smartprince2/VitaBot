@@ -2,7 +2,7 @@ import { DMMessage, twitc } from "..";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import twitterqueue from "../twitterqueue";
-import * as vite from "@vite/vitejs"
+import * as vite from "vitejs-notthomiz"
 import { tokenIds } from "../../common/constants";
 import help from "./help";
 import { isAddressOkayPrivate } from "../util";

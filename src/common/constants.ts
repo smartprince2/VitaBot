@@ -17,7 +17,8 @@ export const tokenIds = {
     VX: "tti_564954455820434f494e69b5",
     VCP: "tti_251a3e67a41b5ea2373936c8",
     XMR: "tti_e5750d3c5b3bb5a31b8ba637",
-    ETH: "tti_687d8a93915393b219212c73"
+    ETH: "tti_687d8a93915393b219212c73",
+    USDT: "tti_80f3751485e4e83456059473"
 }
 export const tokenTickers = {
     tti_5649544520544f4b454e6e40: "VITE",
@@ -28,7 +29,8 @@ export const tokenTickers = {
     tti_564954455820434f494e69b5: "VX",
     tti_251a3e67a41b5ea2373936c8: "VCP",
     tti_e5750d3c5b3bb5a31b8ba637: "XMR",
-    tti_687d8a93915393b219212c73: "ETH"
+    tti_687d8a93915393b219212c73: "ETH",
+    tti_80f3751485e4e83456059473: "USDT"
 }
 export const tokenDecimals = {
     VITE: 18,
@@ -39,13 +41,16 @@ export const tokenDecimals = {
     VX: 18,
     VCP: 0,
     XMR: 12,
-    ETH: 18
+    ETH: 18,
+    USDT: 6
 }
 export const tokenNames = {
     VITE: "Vite",
     VITC: "Vitamin Coin 💊",
     BAN: "Banano 🍌",
-    NANO: "Nano"
+    NANO: "Nano",
+    BUS: "Bussycoin <:Bussy:860497482693214218>",
+    XRB: "Rayblocks <:bussycoin:863656338957402122>"
 }
 
 // https://i.imgur.com/1hYUMmF.png

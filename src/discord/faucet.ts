@@ -10,18 +10,38 @@ import { convert } from "../common/convert"
 import { generateDefaultEmbed } from "./util"
 import { requestWallet } from "../libwallet/http"
 import { VITC_ADMINS } from "./constants"
+import fetch from "node-fetch"
 
 export const FAUCET_CHANNEL_ID = "863555276849807380"
 export const FAUCET_CHANNEL_ID_VITAMINHEAD = "889401673196404756"
-export const FAUCET_PAYOUT = new BigNumber(convert("50", "VITC", "RAW"))
-export const FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert("100", "VITC", "RAW"))
+export let FAUCET_PAYOUT = new BigNumber(convert("25", "VITC", "RAW"))
+export let FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert("50", "VITC", "RAW"))
+export const FAUCET_PAYOUT_USD = new BigNumber("0.125")
+export const FAUCET_PAYOUT_VITAMINHEAD_USD = new BigNumber("0.25")
+
+export async function fetchPrice(){
+    // fetch vitc price
+    const res = await fetch("https://api.vitex.net/api/v2/exchange-rate?tokenIds="+tokenIds.VITC)
+    const json = await res.json()
+    if(json.code !== 0)throw new Error(json.msg)
+    const vitc = json.data[0]
+    if(!vitc)throw new Error("No price found wtf")
+
+    const usdPrice = new BigNumber(vitc.usdRate)
+
+    FAUCET_PAYOUT = new BigNumber(convert(FAUCET_PAYOUT_USD.div(usdPrice), "VITC", "RAW").split(".")[0])
+    FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert(FAUCET_PAYOUT_VITAMINHEAD_USD.div(usdPrice), "VITC", "RAW").split(".")[0])
+}
+
+fetchPrice()
+setInterval(fetchPrice, 60000)
 
 export async function initFaucet(){
     const address = await getVITEAddressOrCreateOne("VitaBot", "Faucet")
     console.info(`Faucet address: ${address.address}`)
 
     client.on("messageCreate", async (message) => {
-        if(![FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.channel.id))return
+        if(![FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.channelId))return
         if(message.author.bot){
             if(message.author.id !== client.user.id)await message.delete()
             return

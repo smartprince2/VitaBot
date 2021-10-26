@@ -43,6 +43,15 @@ export type GetSBPVotesResponse = {
 
 export type SendSBPMessagesResponse = Record<string, never>
 
+export type GetSBPRewardsPendingWithdrawalResponse = {
+    blockProducingReward: string,
+    votingReward: string,
+    totalReward: string,
+    producedBlocks: string,
+    targetBlocks: string,
+    allRewardWithdrawed: boolean
+}
+
 export interface WalletResponses {
     bulk_send: BulkSendResponse,
     get_balances: GetBalancesResponses,
@@ -51,7 +60,9 @@ export interface WalletResponses {
     get_account_block: GetAccountBlockResponse,
     get_account_blocks: GetAccountBlocksResponse,
     get_sbp_votes: GetSBPVotesResponse,
-    send_sbp_messages: SendSBPMessagesResponse
+    send_sbp_messages: SendSBPMessagesResponse,
+    get_sbp_rewards_pending_withdrawal: GetSBPRewardsPendingWithdrawalResponse,
+    withdraw_sbp_rewards: SendResponse
 }
 
 export interface WalletRequestParams {
@@ -62,7 +73,9 @@ export interface WalletRequestParams {
     get_account_block: [string],
     get_account_blocks: [string, string, string, number],
     get_sbp_votes: [string],
-    send_sbp_messages: [SBPMessageStats]
+    send_sbp_messages: [SBPMessageStats],
+    get_sbp_rewards_pending_withdrawal: [string],
+    withdraw_sbp_rewards: [string, string, string]
 }
 
 export async function requestWallet<Action extends keyof WalletResponses>(action:Action, ...params: WalletRequestParams[Action]):Promise<WalletResponses[Action]>{
