@@ -13,6 +13,7 @@ import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
 import { getActiveUsers } from "../ActiviaManager";
 import { requestWallet } from "../../libwallet/http";
+import { parseAmount } from "../../common/amounts";
 
 export default new class RandomTipCommand implements Command {
     description = "Tip one random person amongst active users"
@@ -34,11 +35,11 @@ Examples:
             return
         }
         const amountRaw = args[0]
-        if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw)){
+        if(!amountRaw){
             await help.execute(message, [command])
             return
         }
-        const amount = new BigNumber(amountRaw)
+        const amount = parseAmount(amountRaw, tokenIds.VITC)
         if(amount.isLessThan(10)){
             try{
                 await message.react("💊")
@@ -81,7 +82,7 @@ Examples:
             const balances = await requestWallet("get_balances", address.address)
             const token = tokenIds.VITC
             const balance = new BigNumber(balances[token])
-            const totalAskedRaw = new BigNumber(convert(amount, "VITC", "RAW").split(".")[0])
+            const totalAskedRaw = new BigNumber(convert(amount, "VITC", "RAW"))
             if(balance.isLessThan(totalAskedRaw)){
                 try{
                     await message.react("❌")
@@ -107,7 +108,7 @@ Examples:
                 txhash: tx.hash
             })
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
             try{
                 const u = await client.users.fetch(user)

@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { tokenIds } from "../../common/constants";
+import { allowedCoins, disabledTokens, tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
@@ -11,6 +11,8 @@ import viteQueue from "../../cryptocurrencies/viteQueue";
 import Tip from "../../models/Tip";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
 import { LEADERBOARD_SERVER_WHITELIST } from "../constants";
+import { publicBot, sentHashes } from "..";
+import { parseAmount } from "../../common/amounts";
 
 export default new class TipCommand implements Command {
     description = "Tip someone on Discord"
@@ -37,7 +39,7 @@ Examples:
             ...recipientsRaw
         ] = args
         currencyOrRecipient = currencyOrRecipient || "vitc"
-        if(!amount || !/^\d+(\.\d+)?$/.test(amount))return help.execute(message, [command])
+        if(!amount)return help.execute(message, [command])
         if(isDiscordUserArgument(currencyOrRecipient)){
             // user here
             recipientsRaw.push(currencyOrRecipient)
@@ -63,9 +65,26 @@ Examples:
             await message.author.send(`The token **${currencyOrRecipient}** isn't supported.`)
             return
         }
+        if((tokenIds[currencyOrRecipient] in disabledTokens)){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(`The token **${currencyOrRecipient}** is currently disabled, because: ${disabledTokens[tokenIds[currencyOrRecipient]]}`)
+            return
+        }
+        if(!(allowedCoins[message.guildId] || [tokenIds[currencyOrRecipient]]).includes(tokenIds[currencyOrRecipient])){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.reply(
+                `You can't use **${tokenNameToDisplayName(currencyOrRecipient)}** (${currencyOrRecipient}) in this server.`
+            )
+            return
+        }
         if(recipientsRaw.length === 0)return help.execute(message, [command])
 
-        const amountParsed = new BigNumber(amount)
+        
+        const amountParsed = parseAmount(amount, tokenIds[currencyOrRecipient])
         if(amountParsed.isEqualTo(0)){
             try{
                 await message.react("❌")
@@ -130,7 +149,7 @@ Examples:
             const balances = await requestWallet("get_balances", address.address)
             const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW").split(".")[0])
+            const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW"))
             if(balance.isLessThan(totalAskedRaw)){
                 try{
                     await message.react("❌")
@@ -141,7 +160,7 @@ Examples:
                 return
             }
             if(addresses.length > 1){
-                const amount = convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0]
+                const amount = convert(amountParsed, currencyOrRecipient, "RAW")
                 const txs:BulkSendResponse = await requestWallet(
                     "bulk_send",
                     address.address, 
@@ -151,7 +170,15 @@ Examples:
                     ]), 
                     token
                 )
-                if(currencyOrRecipient === "VITC" && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
+                if(publicBot === message.client.user.id){
+                    for(const tx of txs[1]){
+                        sentHashes.add(tx.hash)
+                        setTimeout(() => {
+                            sentHashes.delete(tx.hash)
+                        }, 60000)
+                    }
+                }
+                if(token === tokenIds.VITC && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
                     const promises = []
                     for(const tx of txs[1]){
                         promises.push(Tip.create({
@@ -170,7 +197,7 @@ Examples:
                     await Promise.all(promises)
                 }
             }else{
-                const amount = convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0]
+                const amount = convert(amountParsed, currencyOrRecipient, "RAW")
                 const tx = await requestWallet(
                     "send",
                     address.address, 
@@ -178,7 +205,13 @@ Examples:
                     amount, 
                     token
                 )
-                if(currencyOrRecipient === "VITC" && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
+                if(publicBot === message.client.user.id){
+                    sentHashes.add(tx.hash)
+                    setTimeout(() => {
+                        sentHashes.delete(tx.hash)
+                    }, 60000)
+                }
+                if(token === tokenIds.VITC && LEADERBOARD_SERVER_WHITELIST.includes(message.guildId)){
                     await Tip.create({
                         amount: parseFloat(
                             convert(
@@ -194,7 +227,7 @@ Examples:
                 }
             }
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
         })
     }

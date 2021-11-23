@@ -1,5 +1,5 @@
 import { TweetV2 } from "twitter-api-v2";
-import { commands, DMMessage, rawCommands, twitc } from "..";
+import { commands, DMMessage, mention, rawCommands, twitc } from "..";
 import Command from "../command";
 
 export default new class HelpCommand implements Command {
@@ -48,9 +48,15 @@ ${cmd.extended_description}${
             recipient_id: user_id, 
             text: `[Command Overview]
 Use .help {command} to know more about a certain command.
-        
-${rawCommands.map(cmd => {
+
+DM Commands:
+${rawCommands.filter(e => e.dm).map(cmd => {
     return `.${cmd.alias[0]} ${cmd.usage}`
+}).join("\n")}
+
+Public Commands
+${rawCommands.filter(e => e.public).map(cmd => {
+    return `${mention} ${cmd.alias[0]} ${cmd.usage}`
 }).join("\n")}`
         })
     }

@@ -1,5 +1,5 @@
-import WS_RPC from "vitejs-notthomiz-ws";
-import * as vite from "vitejs-notthomiz";
+import WS_RPC from "@vite/vitejs-ws";
+import * as vite from "@vite/vitejs";
 import { onNewAccountBlock } from "./receive";
 import BigNumber from "bignumber.js"
 import { getCurrentCycle } from "./cycle";
@@ -11,8 +11,8 @@ import { waitPow } from "./powqueue";
 export const availableNodes = [
     ...new Set([
         process.env.VITE_WS,
-        "wss://vitanode.lightcord.org/ws",
-        "wss://node-tokyo.vite.net/ws"
+        "wss://node-vite.thomiz.dev/ws",
+        "wss://node.vite.net/ws"
     ])
 ]
 
@@ -23,9 +23,10 @@ export const tokenIds = {
     // The healthiest one
     VITC: "tti_22d0b205bed4d268a05dfc3c",
     // 🍌🍌
-    BAN: "tti_61f59e574f9f7babfe8908e5",
+    BAN: "tti_f9bd6782f966f899d74d7df8",
     // fast and feeless too
     NANO: "tti_29a2af20212b985e9d49e899",
+    NYANO: "tti_29a2af20212b985e9d49e899",
     // ew
     BTC: "tti_b90c9baffffc9dae58d1f33f",
     SATS: "tti_b90c9baffffc9dae58d1f33f",
@@ -35,18 +36,20 @@ export const tokenIds = {
     VCP: "tti_251a3e67a41b5ea2373936c8",
     XMR: "tti_e5750d3c5b3bb5a31b8ba637",
     // everything vite does, but with fees
-    ETH: "tti_687d8a93915393b219212c73"
+    ETH: "tti_687d8a93915393b219212c73",
+    VINU: "tti_541b25bd5e5db35166864096"
 }
 export const tokenTickers = {
     tti_5649544520544f4b454e6e40: "VITE",
     tti_22d0b205bed4d268a05dfc3c: "VITC",
-    tti_61f59e574f9f7babfe8908e5: "BAN",
+    tti_f9bd6782f966f899d74d7df8: "BAN",
     tti_29a2af20212b985e9d49e899: "NANO",
     tti_b90c9baffffc9dae58d1f33f: "BTC",
     tti_564954455820434f494e69b5: "VX",
     tti_251a3e67a41b5ea2373936c8: "VCP",
     tti_e5750d3c5b3bb5a31b8ba637: "XMR",
-    tti_687d8a93915393b219212c73: "ETH"
+    tti_687d8a93915393b219212c73: "ETH",
+    tti_541b25bd5e5db35166864096: "VINU"
 }
 
 export const tokenDecimals = {
@@ -55,23 +58,28 @@ export const tokenDecimals = {
     VITC: 18,
     BAN: 29,
     NANO: 30,
+    NYANO: 21,
     BTC: 8,
     SATS: 0,
     VX: 18,
     VCP: 0,
     XMR: 12,
-    ETH: 18
+    ETH: 18,
+    VINU: 18
 }
 
 export const tokenNames = {
     VITE: "Vite",
     ATTOV: "Attov",
-    VITC: "Vitamin Coin 💊",
-    BAN: "Banano 🍌",
+    VITC: "Vitamin Coin",
+    BAN: "Banano",
     NANO: "Nano",
+    NYANO: "Nyano",
     SATS: "Satoshi",
-    BUS: "Bussycoin <:Bussy:860497482693214218>",
-    XRB: "Rayblocks <:bussycoin:863656338957402122>"
+    BUS: "Bussycoin",
+    XRB: "RayBlocks",
+    BANG: "Banano Gold",
+    BROCC: "Broccoli 🥦"
 }
 
 export let wsProvider
@@ -84,7 +92,7 @@ export function getLastUsedNode(){
 export async function init(){
     lastNode = availableNodes[0]
     console.info("[VITE] Connecting to "+availableNodes[0])
-    // TODO: DO our own library, because vitejs isn't good.
+    // TODO: Do our own library, because vitejs isn't good.
     const wsService = new WS_RPC(availableNodes[0], 6e5, {
         protocol: "",
         headers: "",
@@ -97,6 +105,8 @@ export async function init(){
     })
     console.log("[VITE] Connected to node")
     await registerEvents()
+    
+    wsProvider._provider.on("connect", registerEvents)
     
     try{
         await PendingTransaction.find()
@@ -139,7 +149,7 @@ async function registerEvents(){
                 }
                 tokens = tokens.sort((a, b) => a.index-b.index)
                 for(const token of tokens){
-                    const symbol = `${token.tokenSymbol}-${"000".slice((token.index.toString()).length)+token.index}`
+                    const symbol = `${token.tokenSymbol}-${"0".repeat(3-token.index.toString().length)+token.index}`
                     tokenNames[symbol] = token.tokenName
                     if(!tokenNames[token.tokenSymbol]){
                         tokenNames[token.tokenSymbol] = token.tokenName
@@ -210,14 +220,14 @@ export async function changeSBP(address:IAddress, name: string){
     await sendTX(address.address, accountBlock)
 }
 
-export async function getVotes(name:string):Promise<{
+export async function getVotes(name:string, cycle:number = getCurrentCycle()):Promise<{
     total: string,
     votes: {
         [address:string]: string
     },
     name: string
 }>{
-    const list = await wsProvider.request("contract_getSBPVoteDetailsByCycle", ""+getCurrentCycle())
+    const list = await wsProvider.request("contract_getSBPVoteDetailsByCycle", ""+cycle)
     const sbp = list.find(item => item.blockProducerName === name)
     return {
         total: sbp?.totalVotes || "0",
@@ -240,11 +250,12 @@ export async function getBalances(address:string):Promise<{
     return balances
 }
 
-const cachedPreviousBlocks = new Map<string, {
+export const cachedPreviousBlocks = new Map<string, {
     height: number,
     previousHash: string,
     timeout: NodeJS.Timeout
 }>()
+let botBlocks = []
 export async function sendTX(address:string, accountBlock:any):Promise<string>{
     accountBlock.setProvider(wsProvider)
 
@@ -254,19 +265,19 @@ export async function sendTX(address:string, accountBlock:any):Promise<string>{
     ] = await Promise.all([
         wsProvider.request("contract_getQuotaByAccount", address),
         (async () => {
-            if(cachedPreviousBlocks.has(address)){
+            /*if(cachedPreviousBlocks.has(address)){
                 const block = cachedPreviousBlocks.get(address)
                 accountBlock.setHeight((block.height).toString())
                 accountBlock.setPreviousHash(block.previousHash)
-            }else{
+            }else{*/
                 await accountBlock.autoSetPreviousAccountBlock()
-                const block = {
+                /*const block = {
                     timeout: null,
                     height: parseInt(accountBlock.height),
                     previousHash: accountBlock.previousHash
                 }
                 cachedPreviousBlocks.set(address, block)
-            }
+            }*/
         })()
         .then(() => wsProvider.request("ledger_getPoWDifficulty", {
             address: accountBlock.address,
@@ -287,8 +298,22 @@ export async function sendTX(address:string, accountBlock:any):Promise<string>{
     }
     await accountBlock.sign()
     
-    const hash = (await accountBlock.send()).hash
-    const pblock = cachedPreviousBlocks.get(address) || {} as any
+    let hash
+    const isQuotaAddress = address === "vite_178bc3256ac2b30cc923cd0c5f138e79b8b7257e43f69606f3"
+    try{
+        const block = await accountBlock.send()
+        hash = block.hash
+        if(isQuotaAddress){
+            botBlocks.push(block)
+        }
+    }catch(err){
+        if(isQuotaAddress){
+            console.error(JSON.stringify(botBlocks), err)
+            botBlocks = []
+        }
+        throw err
+    }
+    /*const pblock = cachedPreviousBlocks.get(address) || {} as any
     pblock.height++
     pblock.previousHash = hash
     const timeout = pblock.timeout = setTimeout(() => {
@@ -296,7 +321,7 @@ export async function sendTX(address:string, accountBlock:any):Promise<string>{
         if(timeout !== block.timeout)return
         cachedPreviousBlocks.delete(address)
     }, 600000)
-    cachedPreviousBlocks.set(address, pblock)
+    cachedPreviousBlocks.set(address, pblock)*/
 
     return hash
 }

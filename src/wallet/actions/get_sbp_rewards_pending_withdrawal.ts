@@ -1,3 +1,5 @@
+// get pending SBP Rewards by sbp
+
 import { getSBPRewardsPendingWithdrawal } from "../node";
 import { SBPNameValidator } from "../types";
 

@@ -2,8 +2,10 @@
 export const BOT_OWNER = "696481194443014174"
 
 export const LEADERBOARD_SERVER_WHITELIST = [
-    // Vitamin Coin Server
-    "862416292760649768"
+    // Old Vitamin Coin Server
+    "862416292760649768",
+    // New Vitamin Coin Server
+    "907279842716835881"
 ]
 
 export const VITC_ADMINS = [

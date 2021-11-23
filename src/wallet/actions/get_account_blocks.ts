@@ -1,3 +1,5 @@
+// Get account blocks by address, hash and tokenId
+
 import Joi from "joi";
 import { fetchAccountBlocks } from "../node";
 import { AddressValidator, HashValidator, TokenIdValidator } from "../types";

@@ -2,8 +2,8 @@ import { DMMessage, twitc } from "..";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import twitterqueue from "../twitterqueue";
-import * as vite from "vitejs-notthomiz"
-import { tokenIds } from "../../common/constants";
+import * as vite from "@vite/vitejs"
+import { disabledTokens, tokenIds } from "../../common/constants";
 import help from "./help";
 import { isAddressOkayPrivate } from "../util";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -58,6 +58,12 @@ Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet
                 return
             }
         }
+        if((tokenIds[currencyOrRecipient] in disabledTokens)){
+            await twitc.v1.sendDm({
+                recipient_id: message.user.id,
+                text: `The token ${tokenNameToDisplayName(currencyOrRecipient)} is currently disabled, because: ${disabledTokens[tokenIds[currencyOrRecipient]]}`
+            })
+        }
         if(!addr)return help.executePrivate(message, [command])
         if(!vite.wallet.isValidAddress(addr)){
             await twitc.v1.sendDm({
@@ -76,7 +82,7 @@ Withdraw 1 ${tokenNameToDisplayName("BAN")} to your wallet
             const balances = await requestWallet("get_balances", address.address)
             const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
+            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW"))
             if(balance.isLessThan(amount) || balance.isEqualTo(0)){
                 await twitc.v1.sendDm({
                     recipient_id: message.user.id,

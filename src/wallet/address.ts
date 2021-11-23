@@ -1,6 +1,6 @@
 import { Platform } from "../common/constants"
 import Address, { IAddress } from "../models/Address"
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 
 export function parseTransactionType(sendingHandle:string, transaction_handle:string){
     if(!sendingHandle){
@@ -20,6 +20,12 @@ export function parseTransactionType(sendingHandle:string, transaction_handle:st
                 text: `You won **{amount}** from a Giveaway!`
             }
         }
+        case "Discord.Airdrop": {
+            return {
+                type: "airdrop",
+                text: `You received **{amount}** from an Airdrop!`
+            }
+        }
         case "Faucet": {
             return {
                 type: "faucet",
@@ -36,6 +42,15 @@ export function parseTransactionType(sendingHandle:string, transaction_handle:st
                 id: sid,
                 platform: splatform
             }
+        case "Quota": {
+            if(!transaction_handle){
+                return {
+                    type: "unknown",
+                    text: `You received a transaction of **{amount}** but the bot couldn't determine from whom.`
+                }
+            }
+            return parseTransactionType(transaction_handle, null)
+        }
         case "Rewards": {
             switch(sid){
                 case "SBP": {
@@ -51,17 +66,8 @@ export function parseTransactionType(sendingHandle:string, transaction_handle:st
                     }
                 }
             }
-            break
         }
-        case "Quota": {
-            if(!transaction_handle){
-                return {
-                    type: "unknown",
-                    text: `You received a transaction of **{amount}** but the bot couldn't determine from whom.`
-                }
-            }
-            return parseTransactionType(transaction_handle, null)
-        }
+        // eslint-disable-next-line no-fallthrough
         default: {
             return {
                 type: "Unknown",

@@ -1,5 +1,5 @@
 import { MessageEmbed, Message, TextChannel } from "discord.js";
-import { client } from ".";
+import { client, publicBot } from ".";
 import { VITC_COLOR } from "../common/constants";
 import ActionQueue from "../common/queue";
 import DiscordRainRoles from "../models/DiscordRainRoles";
@@ -28,12 +28,16 @@ export function findDiscordRainRoles(guild_id: string){
 }
 
 export const USER_PATTERN = /^<@!?(?<id>\d{17,19})>$/
-export const USER_PATTERN_MULTI = /<@!?\d{17,19}>/g
+export const USER_PATTERN_MULTI = /<@!?(\d{17,19})/g
 export const ID_PATTERN = /^\d{17,19}$/
-export const ROLE_PATTERN = /^<@&?(?<id>\d{17,19})>$/
-export const ROLE_PATTERN_MULTI = /<@&?\d{17,19}>/g
+export const ROLE_PATTERN = /^<@&(?<id>\d{17,19})>$/
+export const ROLE_PATTERN_MULTI = /<@&(\d{17,19})>/g
 export function isDiscordUserArgument(arg: string){
-    return USER_PATTERN_MULTI.test(arg) || ID_PATTERN.test(arg) || ROLE_PATTERN_MULTI.test(arg)
+    return USER_PATTERN.test(arg) || 
+        ID_PATTERN.test(arg) || 
+        ROLE_PATTERN.test(arg) ||
+        USER_PATTERN_MULTI.test(arg) || 
+        ROLE_PATTERN_MULTI.test(arg)
 }
 export async function parseDiscordUser(arg: string){
     if(USER_PATTERN.test(arg)){
@@ -45,10 +49,11 @@ export async function parseDiscordUser(arg: string){
             return []
         }
     }else if(USER_PATTERN_MULTI.test(arg)){
-        const matches = arg.match(USER_PATTERN_MULTI)
+        const matches = arg.matchAll(USER_PATTERN_MULTI)
         const ids:string[] = []
         for(const match of matches){
-            const parsed = match.match(USER_PATTERN)
+            console.log(match)
+            const parsed = match[0].match(USER_PATTERN)
             if(ids.includes(parsed.groups.id))continue
             ids.push(parsed.groups.id)
         }
@@ -100,10 +105,11 @@ export async function parseDiscordUser(arg: string){
     return []
 }
 export async function throwFrozenAccountError(message:Message, args: string[], command: string){
-    await (client.guilds.cache.get("862416292760649768").channels.cache.get("872114540857401374") as TextChannel).send(
+    const channel = client.user.id === publicBot ? client.channels.cache.get("872114540857401374") : client.channels.cache.get("907281130703708170")
+    await (channel as TextChannel).send(
         `An action was requested, but was blocked because account is frozen.
         
 <@${message.author.id}> (${message.author.tag}): ${command} ${JSON.stringify(args)}`
-    )
+    ).catch(()=>{})
     throw new Error("Your account has been frozen, likely for using alts or abusing a faucet/rains. Please contact an admin to unlock your account.")
 }

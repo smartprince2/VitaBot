@@ -3,10 +3,10 @@ import * as vite from "@vite/vitejs"
 import viteQueue from "./viteQueue"
 import BigNumber from "bignumber.js"
 import { IAddress } from "../models/Address"
-import { sendTX } from "./node"
+import { cachedPreviousBlocks, sendTX, wsProvider } from "./node"
 import { getVITEAddressOrCreateOne } from "./address"
 import PendingTransaction, { IPendingTransactions } from "../models/PendingTransaction"
-import { retryAsync } from "../common/util"
+import { waitPow } from "./powqueue"
 
 export const hashToSender:{[key:string]: string} = {}
 
@@ -53,7 +53,7 @@ export async function bulkSend(from: IAddress, payouts:[string, string][], token
         }
         events.on("receive_transaction", listener)
     })
-    const transactions = await rawBulkSend(botAddress, payouts, tokenId, from.handles[0], baseTransaction.hash)
+    const transactions = await rawBulkSend(botAddress, payouts, tokenId, from.handles[0])
     return await Promise.all([
         Promise.resolve([
             baseTransaction,
@@ -63,7 +63,7 @@ export async function bulkSend(from: IAddress, payouts:[string, string][], token
     ])
 }
 
-export async function rawBulkSend(from: IAddress, payouts:[string, string][], tokenId: string, handle: string, hash: string){
+export async function rawBulkSend(from: IAddress, payouts:[string, string][], tokenId: string, handle: string){
     const promises:Promise<IPendingTransactions>[] = []
     for(const [to, amount] of payouts){
         promises.push(PendingTransaction.create({
@@ -72,36 +72,87 @@ export async function rawBulkSend(from: IAddress, payouts:[string, string][], to
             toAddress: to,
             amount,
             tokenId,
-            handle,
-            hash
+            handle
         }))
     }
     return Promise.all(promises)
 }
 
+const usedQuotaPerTX = new BigNumber(21000)
 export async function processBulkTransactions(transactions:IPendingTransactions[]):Promise<SendTransaction[]>{
     const txs:SendTransaction[] = []
-    const errors = []
-    while(transactions[0]){
-        try{
-            const transaction = transactions.shift()
-            const baseTx = await viteQueue.queueAction(transaction.address.address, async () => {
-                return retryAsync(() => {
-                    return send(transaction.address, transaction.toAddress, transaction.amount, transaction.tokenId, Buffer.from(transaction.hash || "", "hex").toString("base64"))
-                }, 3)
+    const address = transactions[0].address
+    const keyPair = vite.wallet.deriveKeyPairByIndex(address.seed, 0)
+    
+    await viteQueue.queueAction(address.address, async () => {
+        cachedPreviousBlocks.delete(address.address)
+        const [
+            quota,
+            previous
+        ] = await Promise.all([
+            wsProvider.request("contract_getQuotaByAccount", address.address),
+            wsProvider.request("ledger_getLatestAccountBlock", address.address)
+            .then(accountBlock => {
+                return {
+                    hash: accountBlock.hash,
+                    height: accountBlock.height
+                }
             })
+        ])
+
+        const powPromises = []
+        let availableQuota = new BigNumber(quota.currentQuota)
+        const blocks = []
+        for(const transaction of transactions){
+            const accountBlock = vite.accountBlock.createAccountBlock("send", {
+                toAddress: transaction.toAddress,
+                address: address.address,
+                tokenId: transaction.tokenId,
+                amount: transaction.amount
+            })
+            accountBlock.setPrivateKey(keyPair.privateKey)
+            accountBlock.setHeight(previous.height)
+            accountBlock.setPreviousHash(previous.hash)
+            if(availableQuota.isLessThan(usedQuotaPerTX)){
+                powPromises.push(waitPow(() => accountBlock.PoW("67108863")))
+            }else{
+                availableQuota = availableQuota.minus(usedQuotaPerTX)
+            }
+            await accountBlock.sign()
+            blocks.push(accountBlock)
+            const baseTx:SendTransaction = {
+                type: "send" as const,
+                from: address.address,
+                to: transaction.toAddress,
+                hash: accountBlock.hash,
+                amount: transaction.amount,
+                token_id: transaction.tokenId,
+                sender_handle: address.handles[0]
+            }
             hashToSender[baseTx.hash] = transaction.handle
             setTimeout(() => {
                 delete hashToSender[baseTx.hash]
             }, 600000)
-            await transaction.delete()
+            events.emit("send_transaction", baseTx)
             txs.push(baseTx)
-        }catch(err){
-            errors.push(err)
+            previous.height = new BigNumber(previous.height).plus(1).toFixed()
+            previous.hash = baseTx.hash
         }
-    }
-    if(errors.length > 0){
-        throw errors
-    }
+        await Promise.all(powPromises)
+        await wsProvider.batch(blocks.map(ab => {
+            return {
+                type: "request",
+                methodName: "ledger_sendRawTransaction",
+                params: [ab.accountBlock]
+            }
+        }))
+        await PendingTransaction.deleteMany({
+            $or: transactions.map(e => {
+                return {
+                    _id: e._id
+                }
+            })
+        })
+    })
     return txs
 }

@@ -1,3 +1,5 @@
+// get tokens
+
 import { tokenDecimals, tokenIds, tokenNames, tokenPromise, tokenTickers } from "../node";
 
 export default async function getTokens(){

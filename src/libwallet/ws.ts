@@ -18,6 +18,7 @@ export class WebsocketConnection extends VitaBotEventEmitter<{
 }> {
     ws: WebSocket
     url = "ws://127.0.0.1:43430"
+    pingTimeout: NodeJS.Timeout
     async connect(){
         if(![WebsocketConnection.States.CLOSING, WebsocketConnection.States.CLOSED].includes(this.state))return // Already connected
         const ws = this.ws = new WebSocket(this.url, {
@@ -36,17 +37,19 @@ export class WebsocketConnection extends VitaBotEventEmitter<{
             const openEvent = () => {
                 cleanEvents()
                 this.emit("open")
+                this.resetPingTimeout()
                 resolve()
             }
             const errorEvent = (err) => {
                 cleanEvents()
                 this.ws = null
                 this.emit("error", err)
-                reject(err)
+                clearTimeout(this.pingTimeout)
 
                 setTimeout(() => {
                     this.connect().catch(()=>{})
                 }, 2000)
+                reject(err)
             }
             ws.once("open", openEvent)
             ws.on("error", errorEvent)
@@ -55,6 +58,7 @@ export class WebsocketConnection extends VitaBotEventEmitter<{
         ws.on("close", () => {
             this.ws = null
             this.emit("close")
+            clearTimeout(this.pingTimeout)
 
             setTimeout(() => {
                 this.connect().catch(()=>{})
@@ -74,6 +78,7 @@ export class WebsocketConnection extends VitaBotEventEmitter<{
     onMessage(data:any){
         switch(data.op){
             case "ping": {
+                this.resetPingTimeout()
                 this.ws.send(JSON.stringify({
                     op: "pong",
                     d: Date.now()
@@ -88,6 +93,17 @@ export class WebsocketConnection extends VitaBotEventEmitter<{
                 this.emit("sbp_rewards", data.d)
                 break
             }
+            case "henlo":
+                console.log("[WS]: Henlo")
         }
+    }
+
+    resetPingTimeout(){
+        clearTimeout(this.pingTimeout)
+        this.pingTimeout = setTimeout(() => {
+            console.log("[WS]: Ping Timeout. Closing connection and reopening.")
+            this.ws.terminate()
+            this.connect().catch(console.error)
+        }, 45000)
     }
 }

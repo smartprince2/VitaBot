@@ -1,3 +1,5 @@
+// Broadcast SBP statistics accross Discord and Twitter
+
 import events, { SBPMessageStats } from "../events";
 
 export default async function sendSBPMessages(message:SBPMessageStats){

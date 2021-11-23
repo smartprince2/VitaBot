@@ -3,7 +3,7 @@ patch()
 const dotenv = require("dotenv")
 const { join } = require("path")
 const mongoose = require("mongoose")
-const vite = require("vitejs-notthomiz")
+const vite = require("@vite/vitejs")
 dotenv.config({
     path: join(__dirname, "../.env")
 })
@@ -17,7 +17,7 @@ const { Client, Team } = require("discord.js")
     const client = new Client({
         intents: []
     })
-    client.token = process.env.DISCORD_TOKEN
+    client.token = process.env[`DISCORD_TOKEN_${process.env.DISCORD_PUBLIC_BOT}`]
     await Promise.all([
         mongoose.connect(process.env.MONGO_URL, {
             useNewUrlParser: true,

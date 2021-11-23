@@ -1,6 +1,6 @@
 import { Message } from "discord.js";
 import Command from "../command";
-import { FAUCET_CHANNEL_ID_VITAMINHEAD, FAUCET_PAYOUT, FAUCET_PAYOUT_VITAMINHEAD } from "../faucet";
+import { FAUCET_CHANNEL_ID, FAUCET_PAYOUT, FAUCET_PAYOUT_VITAMINHEAD } from "../faucet";
 import BigNumber from "bignumber.js"
 import help from "./help";
 import { convert } from "../../common/convert";
@@ -41,7 +41,7 @@ export default new class ClearFaucetCommand implements Command {
             await help.execute(message, [command])
             return
         }
-        let rawAmount = message.channel.id === FAUCET_CHANNEL_ID_VITAMINHEAD ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
+        let rawAmount = message.channel.id !== FAUCET_CHANNEL_ID ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
         
         if(amountRaw){
             if(!/^\d+(\.\d+)?$/.test(amountRaw)){
@@ -93,7 +93,7 @@ export default new class ClearFaucetCommand implements Command {
             }
             // Looks like we already tried to process that one.
             if(message.reactions.cache.has("💊")){
-                if(message.reactions.cache.has("873558842699571220"))continue
+                if(message.reactions.cache.has("909408282307866654"))continue
             }
             message = await message.fetch()
             const isAdmin = VITC_ADMINS.includes(message.author.id)
@@ -163,7 +163,7 @@ export default new class ClearFaucetCommand implements Command {
                     address.address,
                     recipients.map(e => [
                         e.address,
-                        rawAmount.toFixed().split(".")[0]
+                        rawAmount.toFixed(0)
                     ]),
                     tokenIds.VITC
                 )
@@ -172,16 +172,16 @@ export default new class ClearFaucetCommand implements Command {
                     "send",
                     address.address,
                     recipients[0].address,
-                    rawAmount.toFixed().split(".")[0],
+                    rawAmount.toFixed(0),
                     tokenIds.VITC
                 )
             }
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
             for(const message of validMsgs){
                 try{
-                    await message.react("873558842699571220")
+                    await message.react("909408282307866654")
                 }catch{}
             }
         })

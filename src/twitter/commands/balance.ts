@@ -28,7 +28,13 @@ export default new class BalanceCommand implements Command {
             return requestWallet("get_balances", address.address)
         })
 
+        for(const tokenId in balances){
+            if(balances[tokenId] === "0")delete balances[tokenId]
+        }
         if(!balances[tokenIds.VITC])balances[tokenIds.VITC] = "0"
+        if(tokenIds["VINU-000"]){
+            delete balances[tokenIds["VINU-000"]]
+        }
 
         await twitc.v1.sendDm({
             recipient_id: user_id, 
@@ -39,9 +45,9 @@ ${Object.keys(balances).map(tokenId => {
     const displayBalance = convert(balances[tokenId], "RAW", displayToken as any)
 
     return `${tokenNameToDisplayName(displayToken)}: ${displayBalance}`
-}).join("\n")}
+}).join("\n")}`
 
-View on vitescan: https://vitescan.io/address/${address.address}`
+// View on vitescan: https://vitescan.io/address/${address.address}
         })
     }
 }

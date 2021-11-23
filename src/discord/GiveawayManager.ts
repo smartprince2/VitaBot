@@ -15,6 +15,9 @@ import { requestWallet } from "../libwallet/http"
 import Address from "../models/Address"
 import events from "../common/events"
 import asyncPool from "tiny-async-pool"
+import { tokenPrices } from "../common/price"
+import { tokenIds } from "../common/constants"
+import BigNumber from "bignumber.js"
 
 export const watchingGiveawayMap = new Map<string, IGiveaway>()
 export const timeoutsGiveway = new Map<string, lt.Timeout>()
@@ -25,6 +28,7 @@ export const giveawayQueue = new ActionQueue<string>()
 export async function searchGiveaways(){
     const giveaways = await Giveaway.find({})
     for(const giveaway of giveaways){
+        if(!client.guilds.cache.has(giveaway.guild_id))continue
         const message_id = giveaway.message_id
         if(watchingGiveawayMap.has(message_id))continue
         watchingGiveawayMap.set(message_id, giveaway)
@@ -78,20 +82,36 @@ export async function getGiveawayEmbed(giveaway:IGiveaway){
     ])
     const endTime = Math.floor((giveaway.creation_date.getTime()+giveaway.duration)/1000)
     const prefix = process.env.DISCORD_PREFIX
-    const ended = giveaway.creation_date.getTime()+giveaway.duration < Date.now()
+    const ended = giveaway.creation_date.getTime()+giveaway.duration <= Date.now()
+    let totalFiatValue = new BigNumber(0)
+    const vitcPair = tokenPrices[tokenIds.VITC + "/" + tokenIds.USDT]
     const embed = generateDefaultEmbed()
     .setTitle("Giveaway!")
     .setDescription(`Giveaway ${ended ? "Ended" : "Started"}!
 End${ended ? "ed" : "s"} at <t:${endTime}> (<t:${endTime}:R>)
 Winners: 1${giveaway.fee ? 
-`\n**Fee: ${giveaway.fee} ${tokenNameToDisplayName("VITC")}**` : ""}
+`\n**Fee: ${giveaway.fee} ${tokenNameToDisplayName("VITC")}**` : ""} (= **$${
+    new BigNumber(vitcPair?.closePrice || 0)
+        .times(giveaway.fee)
+        .toFixed(2, BigNumber.ROUND_DOWN)
+}**)
 Entries: **${entries.length} participants**
 Chance of winning: **${Math.floor(1/entries.length*10000)/100}%**
 
 ${ended ? "Claimed" : "Current"} Prize(s):
 ${Object.entries(balances).map(tkn => {
-    return `    **${convert(tkn[1], "RAW", tokenIdToName(tkn[0]))} ${tokenNameToDisplayName(tkn[0])}**`
+    const pair = tokenPrices[tkn[0] + "/" + tokenIds.USDT]
+    const displayBalance = convert(tkn[1], "RAW", tokenIdToName(tkn[0]))
+    const fiatValue = new BigNumber(pair?.closePrice || 0)
+        .times(displayBalance)
+    totalFiatValue = totalFiatValue.plus(fiatValue)
+
+    return `    **${displayBalance} ${tokenNameToDisplayName(tkn[0])}** (= **$${
+        fiatValue.toFixed(2, BigNumber.ROUND_DOWN)
+    }**)`
 }).join("\n")}
+
+Total Value: **$${totalFiatValue.toFixed(2, BigNumber.ROUND_DOWN)}**
 
 \`${prefix}ticket\` to enter the current giveaway
 \`${prefix}ticketstatus\` to view your entry status 
@@ -125,13 +145,16 @@ export async function refreshBotEmbed(giveaway:IGiveaway){
 }
 
 export const giveaway_channels = {
-    "862416292760649768": "871065375230537728 862416292760649773 870900472557502474 877465940474888212 878373710174773308 884088302020481074 871022892832407602".split(" ")
+    "862416292760649768": [],
+    "907279842716835881": []
 }
 export const giveaway_posting_channel = {
-    "862416292760649768": "884088302020481074"
+    "862416292760649768": "884088302020481074",
+    "907279842716835881": "907279844319035406"
 }
 export const giveaways_ping_roles = {
-    "862416292760649768": ["883567202492620830"]
+    "862416292760649768": ["883567202492620830"],
+    "907279842716835881": ["907393249965137982"]
 }
 
 export async function startGiveaway(giveaway:IGiveaway){

@@ -1,7 +1,9 @@
+// Withdraw SBP Rewards for given SBP.
+
 import Address from "../../models/Address";
 import { AddressValidator, SBPNameValidator, WalletAddressValidator } from "../types";
 import viteQueue from "../viteQueue";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { tokenIds } from "../node";
 import { send } from "../send";
 

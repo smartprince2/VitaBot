@@ -1,6 +1,6 @@
 import Address, { IAddress } from "../models/Address"
 import { changeSBP, getVotedSBP, sendTX, tokenIds, wsProvider } from "./node"
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import viteQueue from "./viteQueue"
 import events from "./events"
 import { CONSENSUS_ABI } from "./abis"

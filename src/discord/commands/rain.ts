@@ -7,11 +7,11 @@ import discordqueue from "../discordqueue";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import { client } from "..";
 import { throwFrozenAccountError } from "../util";
 import Tip from "../../models/Tip";
 import { getActiveUsers } from "../ActiviaManager";
 import { BulkSendResponse, requestWallet } from "../../libwallet/http";
+import { parseAmount } from "../../common/amounts";
 
 export default new class RainCommand implements Command {
     description = "Tip active users"
@@ -34,25 +34,24 @@ Examples:
             return
         }
         const amountRaw = args[0]
-        if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw)){
+        if(!amountRaw){
             await help.execute(message, [command])
             return
         }
-        const amount = new BigNumber(amountRaw)
-        if(amount.isLessThan(100)){
-            await message.reply("The minimum amount to rain is 100 VITC.")
+        const amount = parseAmount(amountRaw, tokenIds.VITC)
+        if(amount.isLessThan(50)){
+            await message.reply(`The minimum amount to rain is **50 ${tokenNameToDisplayName("VITC")}**.`)
             return
         }
         const userList = (await getActiveUsers(message.guildId))
             .filter(e => e !== message.author.id)
-        if(userList.length < 2){
-            await message.reply(`There are less than 2 active users. Cannot rain. List of active users is: ${userList.map(e => client.users.cache.get(e)?.tag).join(", ")}`)
+        if(userList.length < 5){
+            await message.reply(`There are less than **5 active users** (${userList.length} active users). Cannot rain.`)
             return
         }
         const individualAmount = new BigNumber(
             amount.div(userList.length)
-            .times(100).toFixed()
-            .split(".")[0]
+            .times(100).toFixed(0)
         ).div(100)
         const totalAsked = individualAmount.times(userList.length)
         const [
@@ -109,7 +108,7 @@ Examples:
                 txhash: txs[0][0].hash
             })
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
             try{
                 await message.reply(`Distributed ${convert(totalAskedRaw, "RAW", "VITC")} VITC amongst ${userList.length} active members!`)

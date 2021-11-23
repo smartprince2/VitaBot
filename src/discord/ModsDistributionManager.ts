@@ -9,12 +9,12 @@ import { getVITEAddressOrCreateOne } from "../wallet/address"
 import { requestWallet } from "../libwallet/http"
 import { tokenIds, tokenTickers } from "../common/constants"
 import { TextChannel } from "discord.js"
-import { client } from "."
+import { client, publicBot } from "."
 import { BOT_OWNER } from "./constants"
 import { walletConnection } from "../cryptocurrencies/vite"
 import viteQueue from "../cryptocurrencies/viteQueue"
 
-let nextMonday = new Date("2021-10-11T00:00:00")
+let nextMonday = new Date("2021-11-29T00:00:00")
 while(nextMonday.getTime() < Date.now()){
     nextMonday = new Date(nextMonday.getTime()+durationUnits.w)
 }
@@ -122,46 +122,49 @@ ${bonusText}`)
 (async () => {
     await dbPromise
 
-    nextMondayTask()
-
-    const distributionAddress = await viteQueue.queueAction("Mods.Rewards", () => getVITEAddressOrCreateOne("Mods", "Rewards"))
-    walletConnection.on("tx", async tx => {
-        // also easier to just handle vite txs in this file instead
-        // of creating another module.
-        if(tx.to !== distributionAddress.address || tx.type !== "receive")return
-        console.log(`Incoming transaction of ${convert(tx.amount, "RAW", tokenTickers[tx.token_id])} ${tokenTickers[tx.token_id]} into mods reward address.`)
-        if(tx.token_id !== tokenIds.VITE)return
-        await viteQueue.queueAction(distributionAddress.address, async () => {
-            const addresses = await PersonalAddress.find({
-                platform: "Discord"
-            })
-            if(addresses.length === 0)return
-            const balances = await requestWallet("get_balances", distributionAddress.address)
-            const balance = new BigNumber(balances[tokenIds.VITE]||0)
-            const amountPerPerson = new BigNumber(balance)
-                .dividedBy(addresses.length)
-                .toFixed()
-                .split(".")[0]
-            // can't split equally.
-            if(amountPerPerson === "0")return
-
-            const totalVite = new BigNumber(amountPerPerson).times(addresses.length)
-            const payouts = addresses.map(e => {
-                return [
-                    e.address,
-                    amountPerPerson
-                ] as [string, string]
-            })
-
-            await requestWallet("bulk_send", distributionAddress.address, payouts, tokenIds.VITE)
-
-            const channel = getChannel()
-            if(!channel)return
-
-            await channel.send(`**Team's daily VITE Distribution** was sent!
+    client.on("ready", async () => {
+        // only execute payments on public bot
+        if(client.user.id !== publicBot)return
+        nextMondayTask()
+    
+        const distributionAddress = await viteQueue.queueAction("Mods.Rewards", () => getVITEAddressOrCreateOne("Mods", "Rewards"))
+        walletConnection.on("tx", async tx => {
+            // also easier to just handle vite txs in this file instead
+            // of creating another module.
+            if(tx.to !== distributionAddress.address || tx.type !== "receive")return
+            console.log(`Incoming transaction of ${convert(tx.amount, "RAW", tokenTickers[tx.token_id])} ${tokenTickers[tx.token_id]} into mods reward address.`)
+            if(tx.token_id !== tokenIds.VITE)return
+            await viteQueue.queueAction(distributionAddress.address, async () => {
+                const addresses = await PersonalAddress.find({
+                    platform: "Discord"
+                })
+                if(addresses.length === 0)return
+                const balances = await requestWallet("get_balances", distributionAddress.address)
+                const balance = new BigNumber(balances[tokenIds.VITE]||0)
+                const amountPerPerson = new BigNumber(balance)
+                    .dividedBy(addresses.length)
+                    .toFixed(0)
+                // can't split equally.
+                if(amountPerPerson === "0")return
+    
+                const totalVite = new BigNumber(amountPerPerson).times(addresses.length)
+                const payouts = addresses.map(e => {
+                    return [
+                        e.address,
+                        amountPerPerson
+                    ] as [string, string]
+                })
+    
+                await requestWallet("bulk_send", distributionAddress.address, payouts, tokenIds.VITE)
+    
+                const channel = getChannel()
+                if(!channel)return
+    
+                await channel.send(`**Team's daily VITE Distribution** was sent!
 
 Today, **${convert(totalVite, "RAW", "VITE")} ${tokenNameToDisplayName("VITE")}** was split between **${addresses.length}** mods!
 Everyone received **${convert(amountPerPerson, "RAW", "VITE")} ${tokenNameToDisplayName("VITE")}**.`)
+            })
         })
     })
 })()

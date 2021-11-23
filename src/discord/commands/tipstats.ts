@@ -1,4 +1,8 @@
+import BigNumber from "bignumber.js";
 import { Message } from "discord.js";
+import { tokenIds } from "../../common/constants";
+import { tokenNameToDisplayName } from "../../common/convert";
+import { tokenPrices } from "../../common/price";
 import Tip from "../../models/Tip";
 import Command from "../command";
 
@@ -50,6 +54,21 @@ Examples:
         if(biggest[0]){
             biggestAmount = Math.floor(biggest[0].amount*100)/100
         }
-        await message.reply(`You have sent **${numOfTips}** tips totalling **${totalAmount} VITC**. Your biggest tip of all time is **${biggestAmount} VITC**`)
+        
+        const pair = tokenPrices[tokenIds.VITC+"/"+tokenIds.USDT]
+
+        await message.reply(`You have sent **${numOfTips}** tips totalling **${
+            totalAmount
+        } ${tokenNameToDisplayName("VITC")}** (= **$${
+            new BigNumber(pair?.closePrice || 0)
+                .times(totalAmount)
+                .toFixed(2, BigNumber.ROUND_DOWN)
+        }**). Your biggest tip of all time is **${
+            biggestAmount
+        } ${tokenNameToDisplayName("VITC")}** (= **$${
+            new BigNumber(pair?.closePrice || 0)
+                .times(biggestAmount)
+                .toFixed(2, BigNumber.ROUND_DOWN)
+        }**)`)
     }
 }

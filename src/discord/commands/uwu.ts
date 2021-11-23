@@ -3,7 +3,7 @@ import Command from "../command";
 import { VITC_ADMINS } from "../constants";
 import { generateDefaultEmbed, ID_PATTERN, USER_PATTERN } from "../util";
 import help from "./help";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { client } from "..";
 import { getVITEAddress, parseTransactionType } from "../../wallet/address";
 import Address from "../../models/Address";
@@ -75,6 +75,10 @@ export default new class UwUCommand implements Command {
                     meaning.push("Discord Giveaway")
                     break
                 }
+                case "aidrop":{
+                    meaning.push("Discord Airdrop")
+                    break
+                }
                 case "faucet":{
                     meaning.push("Discord Prescription Channel")
                     break
@@ -94,6 +98,10 @@ export default new class UwUCommand implements Command {
                 }
                 case "rewards": {
                     meaning.push("SBP Distribution Address")
+                    break
+                }
+                case "mods.rewards": {
+                    meaning.push("Mods Weekly Salary Distribution Address")
                     break
                 }
                 case "unknown": {
@@ -120,6 +128,6 @@ export default new class UwUCommand implements Command {
             content: address.address
         })
 
-        await message.react("873558842699571220").catch(()=>{})
+        await message.react("909408282307866654").catch(()=>{})
     }
 }

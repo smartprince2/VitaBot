@@ -1,7 +1,6 @@
 import { Message } from "discord.js";
-import { tokenIds } from "../../common/constants";
+import { allowedCoins, disabledTokens, tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { walletConnection } from "../../cryptocurrencies/vite";
 import { getVITEAddressOrCreateOne } from "../../wallet/address"
 import Command from "../command";
 import discordqueue from "../discordqueue";
@@ -10,11 +9,12 @@ import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
 import * as lt from "long-timeout"
 import { resolveDuration } from "../../common/util";
-import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
+import { throwFrozenAccountError } from "../util";
 import Airdrop from "../../models/Airdrop";
-import { endAirdrop, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
-import { BOT_OWNER } from "../constants";
+import { endAirdrop, getAirdropEmbed, timeoutsAirdrop, watchingAirdropMap } from "../AirdropManager";
 import { requestWallet } from "../../libwallet/http";
+import Tip from "../../models/Tip";
+import { parseAmount } from "../../common/amounts";
 
 export default new class AirdropCommand implements Command {
     description = "Start a new Airdrop"
@@ -24,17 +24,15 @@ Examples:
 **Start an airdrop of 100 ${tokenNameToDisplayName("VITC")} for 10 winners!**
 .airdrop 100 10
 **Make the airdrop lasts one day**
-.airdrop 10 1 1d`
+.airdrop 10 10 1d
+**Airdrop 10 ${tokenNameToDisplayName("VITE")}**
+.airdrop 10 vite 10 1d`
 
     alias = ["airdrop"]
-    usage = "<amount> <winners> <duration>"
+    usage = "<amount> {currency} {winners} {duration}"
     hidden = true
 
     async execute(message:Message, args: string[], command: string){
-        if(message.author.id !== BOT_OWNER){
-            await message.channel.send("That command is limited to Thomiz. Please don't use it.")
-            return
-        }
         if(!message.guildId){
             try{
                 await message.react("❌")
@@ -45,47 +43,87 @@ Examples:
             // eslint-disable-next-line prefer-const
             amountRaw,
             // eslint-disable-next-line prefer-const
-            winnersOrDurationRaw,
+            currency,
+            // eslint-disable-next-line prefer-const
+            winnersRaw,
             durationRaw
         ] = args
         if(!durationRaw){
             durationRaw = "10m"
         }
-        if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw)){
+        if(!amountRaw){
             await help.execute(message, [command])
             return
         }
-        if(!winnersOrDurationRaw || !/^\d+$/.test(winnersOrDurationRaw) || winnersOrDurationRaw.length > 3){
+        if(!currency){
             await help.execute(message, [command])
             return
         }
-        const currency = "VITC"
-        const maxDurationStr = message.member.permissions.has("MANAGE_CHANNELS") ? 
-            "2w" : "1d"
+        if(/^\d+$/.test(currency)){
+            durationRaw = winnersRaw
+            winnersRaw = currency
+            currency = "VITC"
+        }
+        if(!winnersRaw){
+            winnersRaw = "999"
+        }
+        if(!/^\d+$/.test(winnersRaw) || winnersRaw.length > 3){
+            await help.execute(message, [command])
+            return
+        }
+        currency = currency.toUpperCase()
+        if(!(currency in tokenIds)){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(`The token **${currency}** isn't supported.`)
+            return
+        }
+        if((tokenIds[currency] in disabledTokens)){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(`The token **${currency}** is currently disabled, because: ${disabledTokens[tokenIds[currency]]}`)
+            return
+        }
+        if(!(allowedCoins[message.guildId] || [tokenIds[currency]]).includes(tokenIds[currency])){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.reply(
+                `You can't use **${tokenNameToDisplayName(currency)}** (${currency}) in this server.`
+            )
+            return
+        }
+        const maxDurationStr = message.member
+            .permissionsIn(message.channelId).has("MANAGE_CHANNELS") ? 
+                "2w" : "1d"
+        const minDurationStr = "5m"
         const maxDuration = resolveDuration(maxDurationStr)
+        const minDuration = resolveDuration(minDurationStr)
         const [
             amount,
             tokenId,
             winners,
             duration
         ] = [
-            new BigNumber(amountRaw),
+            parseAmount(amountRaw, tokenIds[currency]),
             tokenIds[currency],
-            parseInt(winnersOrDurationRaw),
-            resolveDuration(durationRaw)
+            parseInt(winnersRaw),
+            resolveDuration(durationRaw || "5m")
         ]
         try{
             await message.react("💊")
         }catch{}
-        if(amount.div(winners).isLessThan(10)){
+        /*if(amount.div(winners).isLessThan(1)){
             try{
                 await message.react("❌")
             }catch{}
             await message.author.send(
-                `You can't start an airdrop for less than ${winners*10} VITC.`
+                `You can't start an airdrop for less than **1 ${tokenNameToDisplayName("VITC")}** per winner.`
             )
             return
-        }
+        }*/
         if(winners === 0){
             try{
                 await message.react("❌")
@@ -100,17 +138,24 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            message.author.send(`The maximum duration you are allowed to for a giveaway is **${maxDurationStr}**. You need the *MANAGE_CHANNELS* permission to make an airdrop last longer.`)
+            message.author.send(`The maximum duration you are allowed to for airdrop is **${maxDurationStr}**. You need the *MANAGE_CHANNELS* permission to make an airdrop last longer.`)
             return
         }
-        const botMessage = await message.channel.send("Creating airdrop... Creating addresses and waiting for queue...")
+        if(duration < minDuration){
+            try{
+                await message.react("❌")
+            }catch{}
+            message.author.send(`The minimum duration you are allowed to for airdrop is **${minDurationStr}**.`)
+            return
+        }
+        const botMessage = await message.channel.send("Loading... ⌛")
         const [
             address,
             airdropLockAddress
         ] = await discordqueue.queueAction(message.author.id, async () => {
             return Promise.all([
                 getVITEAddressOrCreateOne(message.author.id, "Discord"),
-                getVITEAddressOrCreateOne(message.author.id, "Discord.Airdrop"),
+                getVITEAddressOrCreateOne(botMessage.id, "Discord.Airdrop"),
             ])
         })
 
@@ -119,12 +164,9 @@ Examples:
         }
 
         await viteQueue.queueAction(address.address, async () => {
-            try{
-                await botMessage.edit("Creating airdrop... Locking funds...")
-            }catch{}
             const balances = await requestWallet("get_balances", address.address)
             const balance = new BigNumber(balances[tokenId] || "0")
-            const totalAmountRaw = new BigNumber(convert(totalAmount, currency, "RAW").split(".")[0])
+            const totalAmountRaw = new BigNumber(convert(totalAmount, currency, "RAW"))
             if(balance.isLessThan(totalAmountRaw)){
                 try{
                     await message.react("❌")
@@ -137,41 +179,36 @@ Examples:
                 )
                 return
             }
-            const stx = await requestWallet(
-                "send",
+            const [stx] = await requestWallet(
+                "send_wait_receive",
                 address.address, 
                 airdropLockAddress.address, 
                 totalAmountRaw.toFixed(), 
                 tokenId
             )
-            await new Promise<void>(r => {
-                const listener = rtx => {
-                    if(rtx.type !== "receive")return
-                    if(rtx.from_hash !== stx.hash)return
-                    walletConnection.off("tx", listener)
-                    r()
-                }
-                walletConnection.on("tx", listener)
-            })
             // Funds are SAFU, create an entry in the database
-            const airdrop = await Airdrop.create({
-                date: Date.now()+Number(duration),
-                message_id: botMessage.id,
-                channel_id: message.channelId,
-                guild_id: message.guildId,
-                winners: winners,
-                amount: totalAmountRaw.toFixed(),
-                user_id: message.author.id,
-            })
-            const embed = generateDefaultEmbed()
-            .setAuthor(message.author.tag, message.author.displayAvatarURL({
-                dynamic: true
-            }))
-            .setTitle(`Airdrop of ${amount.toFixed()} ${currency}!`)
-            .setDescription(`React with 💊 to enter!
-Ends at <t:${Math.floor(airdrop.date.getTime()/1000)}>
-Max Winners: ${winners}
-Amount: ${totalAmount.toFixed()} ${currency}`)
+            const [
+                airdrop
+            ] = await Promise.all([
+                Airdrop.create({
+                    date: Date.now()+Number(duration),
+                    message_id: botMessage.id,
+                    channel_id: message.channelId,
+                    guild_id: message.guildId,
+                    winners: winners,
+                    user_id: message.author.id,
+                }),
+                Tip.create({
+                    amount: parseFloat(convert(totalAmountRaw, "RAW", currency)),
+                    user_id: message.author.id,
+                    date: new Date(),
+                    txhash: stx.hash
+                })
+            ])
+            try{
+                await message.react("909408282307866654")
+            }catch{}
+            const embed = await getAirdropEmbed(airdrop)
             await botMessage.react("💊")
             await botMessage.edit({
                 embeds: [embed],

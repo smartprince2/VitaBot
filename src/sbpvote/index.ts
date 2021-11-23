@@ -8,10 +8,11 @@ import { dbPromise } from "../common/load-db";
 import { tokenIds, tokenTickers } from "../common/constants";
 import viteQueue from "../cryptocurrencies/viteQueue";
 import { convert } from "../common/convert";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { getVITEAddressOrCreateOne } from "../wallet/address";
 import SBPVote from "../models/SBPVote";
 import { durationUnits } from "../common/util";
+import { getCurrentCycle } from "../wallet/cycle";
 
 const ws = new WebsocketConnection()
 
@@ -47,9 +48,9 @@ Promise.all([
             // need vitc to work. The current multiplier is 100x
             if(!vitcBalance.isGreaterThan(0))return
 
-            const votes = await requestWallet("get_sbp_votes", process.env.SBP_NAME || "VitaminCoinSBP")
+            const votes = await requestWallet("get_sbp_votes", process.env.SBP_NAME || "VitaminCoinSBP", getCurrentCycle()-1)
             // Should we reward smart contracts ? I'm not sure but
-            // I'll just assume no.
+            // I'll just assume no. I might add exceptions if people asks me to do so.
             let totalValid = new BigNumber(0)
             const validAddresses = []
             for(const address in votes.votes){
@@ -95,9 +96,8 @@ Promise.all([
                 const amount = new BigNumber(votes.votes[address])
                     .times(viteBalance)
                     .div(totalValid)
-                    .times(65)
-                    .toFixed()
-                    .split(".")[0]
+                    .times(25)
+                    .toFixed(0)
 
                 // remove potential spams
                 if(amount === "0")continue
@@ -120,8 +120,7 @@ Promise.all([
                 const amount = new BigNumber(votes.votes[address])
                 .div(totalValid)
                 .times(viteBalance)
-                .toFixed()
-                .split(".")[0]
+                .toFixed(0)
 
                 // remove potential spams
                 if(amount === "0")continue

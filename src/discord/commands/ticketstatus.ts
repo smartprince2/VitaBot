@@ -1,5 +1,8 @@
+import BigNumber from "bignumber.js";
 import { Message } from "discord.js";
+import { tokenIds } from "../../common/constants";
 import { tokenNameToDisplayName } from "../../common/convert";
+import { tokenPrices } from "../../common/price";
 import Giveaway from "../../models/Giveaway";
 import GiveawayEntry from "../../models/GiveawayEntry";
 import Command from "../command";
@@ -47,16 +50,21 @@ ${process.env.DISCORD_PREFIX}ts`
             await message.author.send(`You didn't participate in the current giveaway yet. Please do \`${process.env.DISCORD_PREFIX}ticket\` to enter this giveaway!`)
             return
         }
+        const pair = tokenPrices[tokenIds.VITC+"/"+tokenIds.USDT]
         const embed = generateDefaultEmbed()
         .setTitle("Giveaway Entry")
-        .setDescription(`Fees paid: **${giveaway.fee} ${tokenNameToDisplayName("VITC")}**
+        .setDescription(`Fee paid: **${giveaway.fee} ${tokenNameToDisplayName("VITC")}** (= **$${
+            new BigNumber(pair?.closePrice || 0)
+                .times(giveaway.fee)
+                .toFixed(2, BigNumber.ROUND_DOWN)
+        }**)
 Entered **<t:${Math.floor(entry.date.getTime()/1000)}:R>**
 [View Vitescan](https://vitescan.io/tx/${entry.txhash})`)
         await message.author.send({
             embeds: [embed]
         })
         try{
-            await message.react("873558842699571220")
+            await message.react("909408282307866654")
         }catch{}
     }
 }

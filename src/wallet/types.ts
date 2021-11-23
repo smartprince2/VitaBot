@@ -1,8 +1,7 @@
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import Joi from "joi"
-import { tokenTickers } from "./node"
 
-export const AddressValidator = Joi.string().custom(address => {
+export const AddressValidator = Joi.string().required().custom(address => {
     const type = vite.wallet.isValidAddress(address)
     if(type === vite.wallet.AddressType.Illegal){
         // not a valid address
@@ -11,7 +10,7 @@ export const AddressValidator = Joi.string().custom(address => {
     return address
 })
 
-export const SBPNameValidator = Joi.string().custom(name => {
+export const SBPNameValidator = Joi.string().required().custom(name => {
     if(!vite.utils.isValidSBPName(name)){
         // not a valid address
         throw new TypeError("Invalid SBP Name")
@@ -19,7 +18,7 @@ export const SBPNameValidator = Joi.string().custom(name => {
     return name
 })
 
-export const SmartContractAddressValidator = Joi.string().custom(address => {
+export const SmartContractAddressValidator = Joi.string().required().custom(address => {
     const type = vite.wallet.isValidAddress(address)
     if(type !== vite.wallet.AddressType.Contract){
         // not a valid address
@@ -28,7 +27,7 @@ export const SmartContractAddressValidator = Joi.string().custom(address => {
     return address
 })
 
-export const WalletAddressValidator = Joi.string().custom(address => {
+export const WalletAddressValidator = Joi.string().required().custom(address => {
     const type = vite.wallet.isValidAddress(address)
     if(type !== vite.wallet.AddressType.Account){
         // not a valid address
@@ -37,12 +36,12 @@ export const WalletAddressValidator = Joi.string().custom(address => {
     return address
 })
 
-export const HashValidator = Joi.string().pattern(/^[\dabcdef]{64}$/)
+export const HashValidator = Joi.string().required().pattern(/^[\dabcdef]{64}$/)
 
-export const AmountValidator = Joi.string().pattern(/^\d+$/)
-export const RawAmountValidator = Joi.string().pattern(/^\d+$/)
+export const AmountValidator = Joi.string().required().pattern(/^\d+$/)
+export const RawAmountValidator = Joi.string().required().pattern(/^\d+$/)
 
-export const TokenIdValidator = Joi.string().custom(token => {
+export const TokenIdValidator = Joi.string().required().custom(token => {
     if(!vite.utils.isValidTokenId(token))throw new TypeError("Invalid Token Id")
     return token
 })

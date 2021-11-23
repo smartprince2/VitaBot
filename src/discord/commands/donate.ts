@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { tokenIds } from "../../common/constants";
+import { allowedCoins, disabledTokens, tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import viteQueue from "../../cryptocurrencies/viteQueue";
@@ -12,6 +12,7 @@ import help from "./help";
 import { refreshBotEmbed } from "../GiveawayManager";
 import { requestWallet } from "../../libwallet/http";
 import { LEADERBOARD_SERVER_WHITELIST } from "../constants";
+import { parseAmount } from "../../common/amounts";
 
 export default new class DonateCommand implements Command {
     description = "Add vitc/any token to the current giveaway pot."
@@ -36,8 +37,7 @@ ${process.env.DISCORD_PREFIX}do 10`
             currencyRaw
         ] = args
         let currency = "vitc"
-        if(!amountRaw || !/^\d+(\.\d+)?$/.test(amountRaw))return help.execute(message, [command])
-        const amount = new BigNumber(amountRaw)
+        if(!amountRaw)return help.execute(message, [command])
         if(currencyRaw)currency = currencyRaw
         currency = currency.toUpperCase()
         if(!(currency in tokenIds)){
@@ -47,6 +47,23 @@ ${process.env.DISCORD_PREFIX}do 10`
             await message.author.send(`The token **${currency}** isn't supported.`)
             return
         }
+        if((tokenIds[currency] in disabledTokens)){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(`The token **${currency}** is currently disabled, because: ${disabledTokens[tokenIds[currency]]}`)
+            return
+        }
+        if(!(allowedCoins[message.guildId] || [tokenIds[currency]]).includes(tokenIds[currency])){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.reply(
+                `You can't use **${tokenNameToDisplayName(currency)}** (${currency}) in this server.`
+            )
+            return
+        }
+        const amount = parseAmount(amountRaw, tokenIds[currency])
         try{
             await message.react("💊")
         }catch{}
@@ -75,7 +92,7 @@ ${process.env.DISCORD_PREFIX}do 10`
         ])
 
         await viteQueue.queueAction(address.address, async () => {
-            const amountRaw = convert(amount, currency, "RAW").split(".")[0]
+            const amountRaw = convert(amount, currency, "RAW")
             if(amountRaw == "0"){
                 try{
                     await message.react("❌")
@@ -109,7 +126,7 @@ ${process.env.DISCORD_PREFIX}do 10`
                 })
             }
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
                 await message.author.send(`Your donation of **${amount.toFixed()} ${tokenNameToDisplayName(currency)}** has been successfully added to the prize pool!`)
             }catch{}
         })

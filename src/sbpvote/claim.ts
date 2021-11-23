@@ -1,7 +1,7 @@
 // Script to automatically claim sbp rewards.
 
 import "../common/load-env"
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { Platform, tokenIds, tokenTickers } from "../common/constants"
 import { convert } from "../common/convert"
 import { dbPromise } from "../common/load-db"
@@ -15,7 +15,7 @@ import lt from "long-timeout"
 
 const destinations = [
     {
-        percent: 40,
+        percent: 45,
         // voters distribution
         address: "SBP.Rewards"
     },
@@ -25,7 +25,7 @@ const destinations = [
         address: "Mods.Rewards"
     },
     {
-        percent: 35,
+        percent: 30,
         // vitc treasury
         address: "vite_4041e7e3d80f879001b7ff67dbef4be23827b65131ef2c79ac"
     }
@@ -82,8 +82,7 @@ Promise.all([
                 if(amount.isEqualTo(0))continue
                 payouts.push([
                     destination.address,
-                    amount.toFixed()
-                    .split(".")[0]
+                    amount.toFixed(0)
                 ])
             }
             // math time finished :(

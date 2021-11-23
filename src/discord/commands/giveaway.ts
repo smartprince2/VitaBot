@@ -1,7 +1,6 @@
 import { Message } from "discord.js";
 import { tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
-import { walletConnection } from "../../cryptocurrencies/vite";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import discordqueue from "../discordqueue";
@@ -16,6 +15,7 @@ import GiveawayEntry from "../../models/GiveawayEntry";
 import { endGiveaway, giveawayQueue, resolveGiveaway, startGiveaway, timeoutsGiveway, watchingGiveawayMap } from "../GiveawayManager";
 import Tip from "../../models/Tip";
 import { requestWallet } from "../../libwallet/http";
+import { parseAmount } from "../../common/amounts";
 
 export default new class GiveawayCommand implements Command {
     description = "Start a new giveaway"
@@ -49,7 +49,7 @@ Examples:
             if(!hasRole){
                 try{
                     await message.react("❌")
-                    await message.author.send(`You don't have the citizen role. You can't participate to this giveaway.`)
+                    await message.reply(`You don't have the citizen role. You can't participate to this giveaway.`)
                 }catch{}
                 return
             }
@@ -62,7 +62,7 @@ Examples:
         let [
             ,,feeRaw
         ] = args
-        if(!amount || !/^\d+(\.\d+)?$/.test(amount))return help.execute(message, [command])
+        if(!amount)return help.execute(message, [command])
         if(!durationRaw)return help.execute(message, [command])
         if(!feeRaw){
             feeRaw = "1"
@@ -71,7 +71,7 @@ Examples:
         const currency = "VITC"
         const maxDurationStr = "1h"
         const maxDuration = resolveDuration(maxDurationStr)
-        const minDurationStr = "1m"
+        const minDurationStr = "30m"
         const minDuration = resolveDuration(minDurationStr)
         const [
             baseAmount,
@@ -79,11 +79,13 @@ Examples:
             duration,
             fee
         ] = [
-            new BigNumber(amount),
+            parseAmount(amount, tokenIds[currency]),
             tokenIds[currency],
             resolveDuration(durationRaw),
-            new BigNumber(new BigNumber(feeRaw)
-            .times(100).toFixed().split(".")[0]).div(100)
+            new BigNumber(
+                new BigNumber(feeRaw)
+                .toFixed(2)
+            )
         ]
         try{
             await message.react("💊")
@@ -92,8 +94,8 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            await message.author.send(
-                `The base amount for that giveaway is too low. You need at least 1k VITC.`
+            await message.reply(
+                `The base amount for that giveaway is too low. You need at least **100 ${tokenNameToDisplayName("VITC")}**.`
             )
             return
         }
@@ -101,8 +103,8 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            await message.author.send(
-                `The duration for that giveaway is too long. The maximum is ${maxDurationStr}.`
+            await message.reply(
+                `The duration for that giveaway is too long. The maximum is **${maxDurationStr}**.`
             )
             return
         }
@@ -110,8 +112,8 @@ Examples:
             try{
                 await message.react("❌")
             }catch{}
-            await message.author.send(
-                `The duration for that giveaway is too short. The minimum is ${minDurationStr}.`
+            await message.reply(
+                `The duration for that giveaway is too short. The minimum is **${minDurationStr}**.`
             )
             return
         }
@@ -121,8 +123,8 @@ Examples:
                 try{
                     await message.react("❌")
                 }catch{}
-                await message.author.send(
-                    `The fee for that giveaway is too low. Please set 0, or at least 1 vitc`
+                await message.reply(
+                    `The fee for that giveaway is too low. Please set at least **1 ${tokenNameToDisplayName("VITC")}**`
                 )
                 return
             }
@@ -130,8 +132,17 @@ Examples:
                 try{
                     await message.react("❌")
                 }catch{}
-                await message.author.send(
+                await message.reply(
                     `The base amount for that giveaway is too low. You need at least the fee amount.`
+                )
+                return
+            }
+            if(fee.times(10).isGreaterThan(baseAmount)){
+                try{
+                    await message.react("❌")
+                }catch{}
+                await message.reply(
+                    `The maximum fee is 10% of the base amount (${baseAmount.div(10).toFixed()} VITC)`
                 )
                 return
             }
@@ -161,13 +172,13 @@ Examples:
                     try{
                         await message.react("❌")
                     }catch{}
-                    await message.author.send(
+                    await message.reply(
                         `You don't have enough money to create this giveaway. You need ${baseAmount.toFixed()} ${currency} but you only have ${convert(balance, "RAW", currency)} ${currency} in your balance. Use .deposit to top up your account.`
                     )
                     return
                 }
-                const stx = await requestWallet(
-                    "send",
+                const [stx] = await requestWallet(
+                    "send_wait_receive",
                     address.address, 
                     giveawayLockedAddress.address, 
                     totalAmountRaw.toFixed(), 
@@ -199,23 +210,15 @@ Examples:
                         user_id: message.author.id,
                         date: new Date(),
                         txhash: stx.hash
-                    }),
-                    new Promise<void>(r => {
-                        const listener = rtx => {
-                            if(rtx.type !== "receive")return
-                            if(rtx.from_hash !== stx.hash)return
-                            walletConnection.off("tx", listener)
-                            r()
-                        }
-                        walletConnection.on("tx", listener)
                     })
                 ])
                 // money locked
                 try{
-                    await message.react("873558842699571220")
+                    await message.react("909408282307866654")
                 }catch{}
                 return giveaway
             })
+            if(!giveaway)return
             const message_id = message.id
             watchingGiveawayMap.set(message_id, giveaway)
             await giveawayQueue.queueAction(giveaway.guild_id, async () => {

@@ -1,4 +1,4 @@
-import { tokenIds } from "../../common/constants";
+import { disabledTokens, tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
@@ -58,6 +58,9 @@ Give one ${tokenNameToDisplayName("VITC")} to more than one person
             }
             case "unsupported_currency": {
                 return `The token ${tip.currency} isn't supported.`
+            }
+            case "maintenance": {
+                return `The token ${tokenNameToDisplayName(tip.currency)} is currently disabled, because: ${tip.reason}`
             }
             case "tip_zero": {
                 return `You can't send a tip of 0 ${tokenNameToDisplayName(tip.currency)}.`
@@ -122,6 +125,11 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
         if(!(currencyOrRecipient in tokenIds))return {
             type: "unsupported_currency",
             currency: currencyOrRecipient
+        }
+        if((tokenIds[currencyOrRecipient] in disabledTokens))return {
+            type: "maintenance",
+            currency: currencyOrRecipient,
+            reason: disabledTokens[tokenIds[currencyOrRecipient]]
         }
         if(recipientsRaw.length === 0)return {
             type: "help"
@@ -190,7 +198,7 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
             const balances = await requestWallet("get_balances", address.address)
             const token = tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW").split(".")[0])
+            const totalAskedRaw = new BigNumber(convert(totalAsked, currencyOrRecipient, "RAW"))
             if(balance.isLessThan(totalAskedRaw)){
                 return {
                     type: "insufficient_balance",
@@ -200,7 +208,7 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
                 }
             }
             if(addresses.length > 1){
-                const amount = convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0]
+                const amount = convert(amountParsed, currencyOrRecipient, "RAW")
                 const txs:BulkSendResponse = await requestWallet(
                     "bulk_send",
                     address.address, 
@@ -218,7 +226,7 @@ https://vitescan.io/tx/${tip.txs[0][0].hash}`
                     recipients: recipients
                 }
             }else{
-                const amount = convert(amountParsed, currencyOrRecipient, "RAW").split(".")[0]
+                const amount = convert(amountParsed, currencyOrRecipient, "RAW")
                 const tx = await requestWallet(
                     "send",
                     address.address, 

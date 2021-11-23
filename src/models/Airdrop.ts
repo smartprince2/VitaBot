@@ -6,7 +6,6 @@ export interface IAirdrop extends Document {
     channel_id: string,
     guild_id: string,
     winners: number,
-    amount: string,
     user_id: string
 }
 
@@ -30,10 +29,6 @@ const AirdropSchema = new Schema<IAirdrop>({
     },
     winners: {
         type: Number,
-        required: true
-    },
-    amount: {
-        type: String,
         required: true
     },
     user_id: {

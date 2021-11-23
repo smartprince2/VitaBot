@@ -1,3 +1,5 @@
+// Get the sbp an address is voting for
+
 import { getVotedSBP } from "../node";
 import { AddressValidator } from "../types";
 

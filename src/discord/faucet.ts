@@ -1,4 +1,4 @@
-import { client } from "."
+import { client, sentHashes } from "."
 import { tokenIds, VITABOT_GITHUB } from "../common/constants"
 import { durationUnits } from "../common/util"
 import { getVITEAddressOrCreateOne } from "../wallet/address"
@@ -14,6 +14,7 @@ import fetch from "node-fetch"
 
 export const FAUCET_CHANNEL_ID = "863555276849807380"
 export const FAUCET_CHANNEL_ID_VITAMINHEAD = "889401673196404756"
+export const NEW_FAUCET_CHANNEL_ID = "907362906847461406"
 export let FAUCET_PAYOUT = new BigNumber(convert("25", "VITC", "RAW"))
 export let FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert("50", "VITC", "RAW"))
 export const FAUCET_PAYOUT_USD = new BigNumber("0.125")
@@ -29,8 +30,8 @@ export async function fetchPrice(){
 
     const usdPrice = new BigNumber(vitc.usdRate)
 
-    FAUCET_PAYOUT = new BigNumber(convert(FAUCET_PAYOUT_USD.div(usdPrice), "VITC", "RAW").split(".")[0])
-    FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert(FAUCET_PAYOUT_VITAMINHEAD_USD.div(usdPrice), "VITC", "RAW").split(".")[0])
+    FAUCET_PAYOUT = new BigNumber(convert(FAUCET_PAYOUT_USD.div(usdPrice), "VITC", "RAW"))
+    FAUCET_PAYOUT_VITAMINHEAD = new BigNumber(convert(FAUCET_PAYOUT_VITAMINHEAD_USD.div(usdPrice), "VITC", "RAW"))
 }
 
 fetchPrice()
@@ -41,14 +42,18 @@ export async function initFaucet(){
     console.info(`Faucet address: ${address.address}`)
 
     client.on("messageCreate", async (message) => {
-        if(![FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD].includes(message.channelId))return
+        if(![
+            FAUCET_CHANNEL_ID, 
+            FAUCET_CHANNEL_ID_VITAMINHEAD, 
+            NEW_FAUCET_CHANNEL_ID
+        ].includes(message.channelId))return
         if(message.author.bot){
             if(message.author.id !== client.user.id)await message.delete()
             return
         }
         const isAdmin = VITC_ADMINS.includes(message.author.id)
         if(isAdmin)return
-        const payout = message.channel.id === FAUCET_CHANNEL_ID_VITAMINHEAD ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
+        const payout = message.channel.id !== FAUCET_CHANNEL_ID ? FAUCET_PAYOUT_VITAMINHEAD : FAUCET_PAYOUT
         try{
             await discordqueue.queueAction(message.author.id+".faucet", async () => {
                 let cooldown = await FaucetCooldown.findOne({
@@ -97,15 +102,19 @@ export async function initFaucet(){
                     )
                     return
                 }
-                await requestWallet(
+                const tx = await requestWallet(
                     "send",
                     address.address, 
                     recipient.address, 
                     payout.toFixed(), 
                     tokenIds.VITC
                 )
+                sentHashes.add(tx.hash)
+                setTimeout(() => {
+                    sentHashes.delete(tx.hash)
+                }, 60000);
                 try{
-                    await message.react("873558842699571220")
+                    await message.react("909408282307866654")
                 }catch{}
             })
         }catch(err){

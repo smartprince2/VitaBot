@@ -3,7 +3,6 @@ import Giveaway from "../../models/Giveaway";
 import Command from "../command";
 import { endGiveaway, resolveGiveaway, timeoutsGiveway } from "../GiveawayManager";
 import * as lt from "long-timeout"
-import { VITC_ADMINS } from "../constants";
 
 export default new class GiveawayEndCommand implements Command {
     description = "End the current giveaway"
@@ -25,7 +24,7 @@ ${process.env.DISCORD_PREFIX}gend`
         try{
             await message.react("💊")
         }catch{}
-        if(!VITC_ADMINS.includes(message.author.id)){
+        if(!message.member.permissions.has("MANAGE_MESSAGES")){
             try{
                 await message.react("❌")
             }catch{}
@@ -50,7 +49,7 @@ ${process.env.DISCORD_PREFIX}gend`
         const resolve = resolveGiveaway.get(giveaway.message_id)
         resolve()
         try{
-            await message.react("873558842699571220")
+            await message.react("909408282307866654")
         }catch{}
     }
 }

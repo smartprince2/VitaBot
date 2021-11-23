@@ -132,6 +132,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             .replace(/\*+/g, "")
             .replace("{amount}", `${displayNumber} ${tokenNameToDisplayName(tokenName)}`)
             + text
+        if(notif.type === "rewards")return
         if(notif.type === "tip"){
             let mention = ""
             if(notif.platform == "Discord"){
@@ -148,17 +149,15 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
             }
             text = text.replace("{mention}", mention)
         }
-        for(const handle of address.handles){
-            const [id, service] = handle.split(".")
-            switch(service){
-                case "Twitter": {
-                    if(!await isAuthorized(id))break
-                    await twitc.v1.sendDm({
-                        recipient_id: id,
-                        text: text
-                    })
-                    break
-                }
+        const [id, service] = address.handles[0].split(".")
+        switch(service){
+            case "Twitter": {
+                if(!await isAuthorized(id))break
+                await twitc.v1.sendDm({
+                    recipient_id: id,
+                    text: text
+                })
+                break
             }
         }
     })
@@ -198,9 +197,14 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
     streamFilter.autoReconnectRetries = Infinity
     streamFilter.on(ETwitterStreamEvent.Data, async (data) => {
         const tweet = data.data
+        if(!tweet){
+            // for some reasons...
+            console.log("INVALID: ", data)
+            return
+        }
         // retweet
         if(tweet.referenced_tweets?.find(e => e.type === "retweeted"))return
-        if(tweet.author_id === account.id_str)
+        if(tweet.author_id === account.id_str)return
         console.log(tweet)
         const tempArgs = tweet.text.toLowerCase().split(/( |\n)+/g)
         const mentionIndexs = []
@@ -218,7 +222,7 @@ View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
         if(!mentionIndexs.length)return
         for(const mentionIndex of mentionIndexs){
             const args = tweet.text.split(/( |\n)+/g).slice(mentionIndex+1).filter(e => !!e.trim())
-            const command = args.shift().toLowerCase().replace(/^\./, "")
+            const command = args.shift()?.toLowerCase()?.replace(/^\./, "") || ""
             
             const cmd = commands.get(command)
             console.log(command, args)

@@ -11,8 +11,8 @@ specifiers:
   '@types/twitter': ^1.7.1
   '@typescript-eslint/eslint-plugin': ^4.29.0
   '@typescript-eslint/parser': ^4.29.0
-  '@vite/vitejs': ^2.3.15
-  '@vite/vitejs-ws': ^2.3.15
+  '@vite/vitejs': ^2.3.16
+  '@vite/vitejs-ws': ^2.3.16
   bignumber.js: ^9.0.1
   bufferutil: ^4.0.3
   discord.js: '13'
@@ -40,8 +40,8 @@ specifiers:
   zlib-sync: ^0.1.7
 
 dependencies:
-  '@vite/vitejs': 2.3.15
-  '@vite/vitejs-ws': 2.3.15
+  '@vite/vitejs': 2.3.16
+  '@vite/vitejs-ws': 2.3.16
   bignumber.js: 9.0.1
   discord.js: 13.0.0_72ef9f06cb99540da679cbf1bf7a3256
   dotenv: 10.0.0
@@ -483,12 +483,12 @@ packages:
       eslint-visitor-keys: 2.1.0
     dev: true
 
-  /@vite/vitejs-ws/2.3.15:
-    resolution: {integrity: sha512-Fy/2FUbqVqk1mgnQFX270mEynjcn5lPkbM7V04dvxr2QBOLljW2cDm7mUUpOnSfjzF67WDTAA49AfDKnJzslvQ==}
+  /@vite/vitejs-ws/2.3.16:
+    resolution: {integrity: sha512-nH6DSH9jQj0GzuEbscIpYgp6DAXAf3tRPObl87sJUEq90GDOG+HJXdx6/HX96spiPln3eijExJqN2gUZD38uBw==}
     dev: false
 
-  /@vite/vitejs/2.3.15:
-    resolution: {integrity: sha512-409iRNeIU0u4FRwiUmpVgX7ZD9myRJwqX0cWUW6WNfKmQJuLKYIeWrM3A9bd4WChM258jSEwlc/GBB8gNeJH5Q==}
+  /@vite/vitejs/2.3.16:
+    resolution: {integrity: sha512-UjD+skv3So4ohUdSrdAo0RFipodxXgEM/PoDSI2DiO59UPUi9RfJsNOVQJMlUmHMT0KAB01RX4Dv7IJecbgQ9Q==}
     dependencies:
       '@sisi/ed25519-blake2b-hd-key': 1.0.2
       '@sisi/tweetnacl-blake2b': 1.0.0

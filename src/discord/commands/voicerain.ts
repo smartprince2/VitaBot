@@ -74,9 +74,8 @@ Examples:
         }
         const individualAmount = new BigNumber(
             amount.div(userList.length)
-            .times(100).toFixed()
-            .split(".")[0]
-        ).div(100)
+            .toFixed(2)
+        )
         const totalAsked = individualAmount.times(userList.length)
         const [
             address,
@@ -132,7 +131,7 @@ Examples:
                 txhash: hash
             })
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
             try{
                 await message.reply(`Distributed ${convert(totalAskedRaw, "RAW", "VITC")} VITC amongst ${userList.length} active members!`)

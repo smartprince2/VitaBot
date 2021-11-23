@@ -7,7 +7,7 @@ import { generateDefaultEmbed, parseDiscordUser } from "./util"
 import { tokenTickers, VITABOT_GITHUB } from "../common/constants"
 import { dbPromise } from "../common/load-db"
 import { FAUCET_CHANNEL_ID, FAUCET_CHANNEL_ID_VITAMINHEAD, initFaucet } from "./faucet"
-import { searchAirdrops } from "./AirdropManager"
+import { getAirdropEmbed, searchAirdrops, watchingAirdropMap } from "./AirdropManager"
 import { durationUnits } from "../common/util"
 import { searchGiveaways } from "./GiveawayManager"
 import { walletConnection } from "../cryptocurrencies/vite"
@@ -17,6 +17,12 @@ import { VITC_ADMINS } from "./constants"
 import { parseTransactionType } from "../wallet/address"
 import "./ModsDistributionManager"
 
+export const discordBotId = process.argv[2]
+export const deprecatedBots = process.env.DISCORD_DEPRECATED_BOT.split(",")
+export const publicBot = process.env.DISCORD_PUBLIC_BOT
+
+export const sentHashes = new Set<string>()
+
 export const client = new Discord.Client({
     allowedMentions: {
         repliedUser: true
@@ -25,7 +31,8 @@ export const client = new Discord.Client({
         Discord.Intents.FLAGS.GUILDS,
         Discord.Intents.FLAGS.GUILD_MESSAGES,
         Discord.Intents.FLAGS.DIRECT_MESSAGES,
-        Discord.Intents.FLAGS.GUILD_MEMBERS
+        Discord.Intents.FLAGS.GUILD_MEMBERS,
+        Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS
     ],
     partials: [
         "MESSAGE",
@@ -50,21 +57,23 @@ client.on("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`)
 
     botRegexp = new RegExp("^<@!?"+client.user.id+">$")
-
-    initFaucet()
+    // every hour
+    setTimeout(searchAirdrops, durationUnits.h)
     
     searchAirdrops()
     .catch(()=>{})
 
     searchGiveaways()
     .catch(console.error)
-    // every hour
-    setTimeout(searchAirdrops, durationUnits.h)
 
-    walletConnection.on("sbp_rewards", async message => {
-        const channel = client.channels.cache.get("888496337799245874") as TextChannel
-        if(!channel)return
-        const text = `Today's 💊 voter rewards were sent!
+    if(publicBot !== client.user.id && !deprecatedBots.includes(client.user.id)){
+        // private bot
+        initFaucet()
+
+        walletConnection.on("sbp_rewards", async message => {
+            const channel = client.channels.cache.get("907343213822623825") as TextChannel
+            if(!channel)return
+            const text = `Today's 💊 voter rewards were sent!
 
 **${Math.round(parseFloat(convert(message.vite, "RAW", "VITE")))} ${tokenNameToDisplayName("VITE")}**!
 
@@ -74,64 +83,140 @@ And
 
 Thanks to all our voters!`
 
-        const msg = await channel.send(text)
-        await msg.crosspost()
-    })
-    
-    walletConnection.on("tx", async transaction => {
-        if(transaction.type !== "receive")return
-        
-        const address = await Address.findOne({
-            address: transaction.to
+            const msg = await channel.send(text)
+            await msg.crosspost()
         })
-        // shouldn't happen but
-        if(!address)return
-
-        // don't send notifications on random coins.
-        if(!(transaction.token_id in tokenTickers))return
         
-        const tokenName = tokenTickers[transaction.token_id]
-        const displayNumber = convert(
-            transaction.amount, 
-            "RAW", 
-            tokenName
-        )
-        let text = `
+        walletConnection.on("tx", async transaction => {
+            if(transaction.type !== "receive")return
+            
+            const address = await Address.findOne({
+                address: transaction.to
+            })
+            // shouldn't happen but
+            if(!address)return
+
+            // don't send notifications on random coins.
+            if(!(transaction.token_id in tokenTickers))return
+            
+            const tokenName = tokenTickers[transaction.token_id]
+            const displayNumber = convert(
+                transaction.amount, 
+                "RAW", 
+                tokenName
+            )
+            let text = `
 
 View transaction on vitescan: https://vitescan.io/tx/${transaction.hash}`
 
-        const sendingAddress = await Address.findOne({
-            address: transaction.from,
-            network: "VITE"
-        })
-        const notif = parseTransactionType(sendingAddress?.handles?.[0], transaction.sender_handle)
-        text = notif.text
-            .replace("{amount}", `${displayNumber} ${tokenNameToDisplayName(tokenName)}`)
-            + text
-        if(notif.type === "tip"){
-            let mention = ""
-            if(notif.platform == "Discord"){
-                const user = (await parseDiscordUser(notif.id))[0]
-                if(user)mention = user.tag
-            }else if(notif.platform == "Twitter"){
-                mention = `https://twitter.com/i/user/${notif.id}`
-            }else{
-                mention = `${notif.platform}:${notif.id}`
+            const sendingAddress = await Address.findOne({
+                address: transaction.from,
+                network: "VITE"
+            })
+            const notif = parseTransactionType(sendingAddress?.handles?.[0], transaction.sender_handle)
+            if(notif.type === "rewards")return
+            if(notif.type === "airdrop")return
+            text = notif.text
+                .replace("{amount}", `${displayNumber} ${tokenNameToDisplayName(tokenName)}`)
+                + text
+            if(notif.type === "tip"){
+                let mention = ""
+                if(notif.platform == "Discord"){
+                    const user = (await parseDiscordUser(notif.id))[0]
+                    if(user)mention = user.tag
+                }else if(notif.platform == "Twitter"){
+                    mention = `https://twitter.com/i/user/${notif.id}`
+                }else{
+                    mention = `${notif.platform}:${notif.id}`
+                }
+                text = text.replace("{mention}", mention)
             }
-            text = text.replace("{mention}", mention)
-        }
-        for(const handle of address.handles){
-            const [id, service] = handle.split(".")
-            switch(service){
+            const [id] = address.handles[0].split(".")
+            switch(address.handles[0].split(".").slice(1).join(".")){
                 case "Discord": {
-                    const user = client.users.cache.get(id)
-                    if(!user)return
+                    if(notif.type === "tip" && !sentHashes.has(transaction.from_hash))break
+                    const user = await client.users.fetch(id)
+                    if(!user)break
                     user.send(text).catch(()=>{})
                     break
                 }
+                case "Discord.Airdrop": {
+                    const airdrop = watchingAirdropMap.get(id)
+                    if(!airdrop)return
+                    const channel = client.channels.cache.get(airdrop.channel_id) as TextChannel
+                    const [
+                        message,
+                        embed
+                    ] = await Promise.all([
+                        channel.messages.fetch(airdrop.message_id),
+                        getAirdropEmbed(airdrop)
+                    ])
+                    await message.edit({
+                        embeds: [embed]
+                    })
+                }
             }
-        }
-    })
+        })
+    }else if(publicBot === client.user.id){
+        // public bot
+        initFaucet()
+
+        walletConnection.on("sbp_rewards", async message => {
+            const channel = client.channels.cache.get("888496337799245874") as TextChannel
+            if(!channel)return
+            const text = `Today's 💊 voter rewards were sent!
+
+**${Math.round(parseFloat(convert(message.vite, "RAW", "VITE")))} ${tokenNameToDisplayName("VITE")}**!
+
+And
+
+**${Math.round(parseFloat(convert(message.vitc, "RAW", "VITC")))} ${tokenNameToDisplayName("VITC")}**!
+
+Thanks to all our voters!`
+
+            const msg = await channel.send(text)
+            await msg.crosspost()
+        })
+        
+        walletConnection.on("tx", async transaction => {
+            if(transaction.type !== "receive")return
+            
+            const address = await Address.findOne({
+                address: transaction.to
+            })
+            // shouldn't happen but
+            if(!address)return
+
+            if(!(transaction.token_id in tokenTickers))return
+
+            /*const sendingAddress = await Address.findOne({
+                address: transaction.from,
+                network: "VITE"
+            })*/
+            
+            //const notif = parseTransactionType(sendingAddress?.handles?.[0], transaction.sender_handle)
+            for(const handle of address.handles){
+                const [id] = handle.split(".")
+                switch(handle.split(".").slice(1).join(".")){
+                    case "Discord.Airdrop": {
+                        const airdrop = watchingAirdropMap.get(id)
+                        if(!airdrop)return
+                        const channel = client.channels.cache.get(airdrop.channel_id) as TextChannel
+                        const [
+                            message,
+                            embed
+                        ] = await Promise.all([
+                            channel.messages.fetch(airdrop.message_id),
+                            getAirdropEmbed(airdrop)
+                        ])
+                        await message.edit({
+                            embeds: [embed]
+                        })
+                    }
+                }
+            }
+        })
+    }
 })
 
 const prefix = process.env.DISCORD_PREFIX
@@ -152,6 +237,13 @@ client.on("messageCreate", async message => {
     if(!cmd)return
 
     try{
+        if(deprecatedBots.includes(message.client.user.id)){
+            if(message.guild){
+                await message.reply(`Hi! We just changed our bots. Please add the new one here: https://discord.com/oauth2/authorize?client_id=${publicBot}&permissions=515399609408&scope=bot`)
+            }else{
+                await message.reply(`Hi! We just changed our bots. Please contact the new one here: <@${publicBot}>`)
+            }
+        }
         await cmd.execute(message, args, command)
     }catch(err){
         console.error(err)
@@ -170,7 +262,7 @@ client.on("messageCreate", async message => {
                 messageReference: message,
                 failIfNotExists: false
             }
-        })
+        }).catch(()=>{})
     }
 })
 
@@ -192,5 +284,5 @@ fs.readdir(join(__dirname, "commands"), {withFileTypes: true})
     }
     // wait for db before launching bot
     await dbPromise
-    await client.login(process.env.DISCORD_TOKEN)
+    await client.login(process.env[`DISCORD_TOKEN_${discordBotId}`])
 })

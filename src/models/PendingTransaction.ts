@@ -8,7 +8,8 @@ export interface IPendingTransactions extends Document {
     toAddress: string,
     handle: string,
     amount: string,
-    tokenId: string
+    tokenId: string,
+    hash: string
 }
 
 const AddressSchema = new Schema<IPendingTransactions>({
@@ -30,6 +31,10 @@ const AddressSchema = new Schema<IPendingTransactions>({
         type: String
     },
     amount: {
+        type: String,
+        required: true
+    },
+    hash: {
         type: String,
         required: true
     },

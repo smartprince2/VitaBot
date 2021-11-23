@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { tokenIds } from "../../common/constants";
+import { disabledTokens, tokenIds } from "../../common/constants";
 import { convert, tokenNameToDisplayName } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
@@ -8,7 +8,7 @@ import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import { requestWallet } from "../../libwallet/http";
 
 export default new class WithdrawCommand implements Command {
@@ -62,6 +62,13 @@ Examples:
                 return
             }
         }
+        if((tokenIds[currencyOrRecipient] in disabledTokens)){
+            try{
+                await message.react("❌")
+            }catch{}
+            await message.author.send(`The token **${currencyOrRecipient}** is currently disabled, because: ${disabledTokens[tokenIds[currencyOrRecipient]]}`)
+            return
+        }
         if(!addr)return help.execute(message, [command])
 
         const address = await discordqueue.queueAction(message.author.id, async () => {
@@ -78,7 +85,7 @@ Examples:
             const balances = await requestWallet("get_balances", address.address)
             const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
+            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW"))
             if(balance.isLessThan(amount)){
                 try{
                     await message.react("❌")
@@ -100,7 +107,7 @@ Examples:
                 token
             )
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
             await message.channel.send({
                 content: `Your withdraw was processed!

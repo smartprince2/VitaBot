@@ -13,7 +13,7 @@ import * as fs from "fs"
 const client = new Client({
     intents: []
 })
-client.token = process.env.DISCORD_TOKEN
+client.token = process.env[`DISCORD_TOKEN_${process.env.DISCORD_PUBLIC_BOT}`]
 dbPromise.then(async () => {
     const data = []
     const addresses = await Address.find()

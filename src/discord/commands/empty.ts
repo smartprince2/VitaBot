@@ -4,11 +4,11 @@ import { convert } from "../../common/convert";
 import { getVITEAddressOrCreateOne } from "../../wallet/address";
 import Command from "../command";
 import discordqueue from "../discordqueue";
-import { generateDefaultEmbed, throwFrozenAccountError } from "../util";
+import { generateDefaultEmbed } from "../util";
 import help from "./help";
 import BigNumber from "bignumber.js"
 import viteQueue from "../../cryptocurrencies/viteQueue";
-import * as vite from "vitejs-notthomiz"
+import * as vite from "@vite/vitejs"
 import Address from "../../models/Address";
 import { BOT_OWNER } from "../constants";
 import { requestWallet } from "../../libwallet/http";
@@ -69,9 +69,6 @@ export default new class EmptyCommand implements Command {
             await message.reply("This address isn't managed by the tipbot.")
             return
         }
-        if(address.paused){
-            await throwFrozenAccountError(message, args, command)
-        }
 
         await viteQueue.queueAction(address.address, async () => {
             try{
@@ -80,7 +77,7 @@ export default new class EmptyCommand implements Command {
             const balances = await requestWallet("get_balances", address.address)
             const token = isRawTokenId ? currencyOrRecipient : tokenIds[currencyOrRecipient]
             const balance = new BigNumber(token ? balances[token] || "0" : "0")
-            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW").split(".")[0])
+            const amount = new BigNumber(amountRaw === "all" ? balance : convert(amountRaw, currencyOrRecipient, "RAW"))
             if(balance.isLessThan(amount)){
                 try{
                     await message.react("❌")
@@ -102,7 +99,7 @@ export default new class EmptyCommand implements Command {
                 token
             )
             try{
-                await message.react("873558842699571220")
+                await message.react("909408282307866654")
             }catch{}
             await message.channel.send({
                 content: `Emptying Done!

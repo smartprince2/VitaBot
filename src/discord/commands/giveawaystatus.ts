@@ -39,7 +39,7 @@ ${process.env.DISCORD_PREFIX}gs`
             embeds: [embed]
         })
         try{
-            await message.react("873558842699571220")
+            await message.react("909408282307866654")
         }catch{}
     }
 }

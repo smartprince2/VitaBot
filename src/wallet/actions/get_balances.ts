@@ -1,3 +1,5 @@
+// Get balance by address
+
 import viteQueue from "../viteQueue";
 import { getBalances } from "../node";
 import { AddressValidator } from "../types";

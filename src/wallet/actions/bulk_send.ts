@@ -1,3 +1,5 @@
+// Basically send to multiple addresses, using the quota address
+
 import BigNumber from "bignumber.js";
 import Address from "../../models/Address";
 import { AmountError, BalanceError } from "../errors";

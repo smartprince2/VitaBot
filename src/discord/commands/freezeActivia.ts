@@ -49,7 +49,7 @@ export default new class FreezeActiviaCommand implements Command {
                         }
                         case "unfreezeactivia": {
                             await activiafreeze.delete()
-                            await message.react("873558842699571220")
+                            await message.react("909408282307866654")
                             return
                         }
                     }
@@ -67,7 +67,7 @@ export default new class FreezeActiviaCommand implements Command {
                                     user_id: user.id
                                 })
                             ])
-                            await message.react("873558842699571220")
+                            await message.react("909408282307866654")
                             return
                         }
                         case "unfreezeactivia": {
